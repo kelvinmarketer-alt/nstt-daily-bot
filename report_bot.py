@@ -96,9 +96,10 @@ def norm_date(s):
 
 
 # ---------------------------------------------------------------- 1. công việc
-def section_tasks(today_ddmm):
+def section_tasks(today_ddmm, grid=None):
     """Trả về (body_text, số_việc) cho ngày today_ddmm (dd/mm)."""
-    grid = fetch_grid(SHEET_TASKS)
+    if grid is None:
+        grid = fetch_grid(SHEET_TASKS)
     if not grid:
         return ("• Không đọc được sheet.", 0)
     header = grid[0]
@@ -251,46 +252,60 @@ def save_state(state):
         json.dump(state, f, ensure_ascii=False, indent=2)
 
 
-def process_work(target):
-    """Xử lý báo cáo CÔNG VIỆC cho ngày `target` (datetime), chống gửi trùng.
-    - Có việc & nội dung đổi so với lần gửi trước -> gửi (đánh dấu CẬP NHẬT nếu đã gửi rồi).
-    - Trống & chưa nhắc -> gửi nhắc 1 lần.
-    - Không đổi -> bỏ qua (không spam).
-    """
-    ddmm = f"{target.day:02d}/{target.month:02d}"
-    body, count = section_tasks(ddmm)
-    state = load_state()
-    key = f"{target.year}-{ddmm}"
+WORK_LOOKBACK = 4   # số ngày quét lùi để gửi bù các ngày bị bỏ sót
+
+
+def _send_work_day(day, grid, state, is_today, remind_today):
+    """Xử lý 1 ngày trong vùng quét."""
+    ddmm = f"{day.day:02d}/{day.month:02d}"
+    key = f"{day.year}-{ddmm}"
     entry = state.get(key, {})
+    seen = key in state               # bot đã từng theo dõi ngày này chưa
+    body, count = section_tasks(ddmm, grid)
 
     if count == 0:
-        if entry.get("reminded"):
-            print(f"[{key}] Trống, đã nhắc trước đó -> bỏ qua")
-            return
-        send_telegram(
-            f"⚠️ <b>NHẮC NHẬP BÁO CÁO CÔNG VIỆC</b>\n"
-            f"🗓 Ngày {target.strftime('%d/%m/%Y')} chưa có đầu việc nào trong "
-            f"sheet <i>Daily Report</i>.\nNhân viên vui lòng cập nhật."
-        )
-        entry["reminded"] = True
-        state[key] = entry
-        save_state(state)
+        # Chỉ nhắc cho đúng HÔM NAY buổi tối; không nhắc ngày cũ.
+        if is_today and remind_today and not entry.get("reminded"):
+            send_telegram(
+                f"⚠️ <b>NHẮC NHẬP BÁO CÁO CÔNG VIỆC</b>\n"
+                f"🗓 Ngày {day.strftime('%d/%m/%Y')} chưa có đầu việc nào trong "
+                f"sheet <i>Daily Report</i>.\nNhân viên vui lòng cập nhật."
+            )
+            entry["reminded"] = True
+            state[key] = entry
         return
 
     h = hashlib.md5(body.encode("utf-8")).hexdigest()
     if entry.get("hash") == h:
-        print(f"[{key}] Nội dung không đổi -> bỏ qua")
+        return                        # đã gửi đúng nội dung này rồi
+    # Ngày CŨ mà bot chưa từng theo dõi -> bỏ qua, tránh dump lịch sử khi mới deploy.
+    if not is_today and not seen:
         return
 
-    is_update = "hash" in entry
-    tag = " (🔄 CẬP NHẬT)" if is_update else ""
+    if "hash" in entry:
+        tag = " (🔄 CẬP NHẬT)"         # đã gửi trước đó, giờ NV sửa
+    elif not is_today:
+        tag = " (⏰ GỬI BÙ)"           # ngày cũ từng bị bỏ sót, giờ mới có dữ liệu
+    else:
+        tag = ""                      # báo cáo bình thường trong ngày
     header = (
         f"🧑‍💻 <b>BÁO CÁO CÔNG VIỆC{tag} — NÔNG SẢN TUẤN TÚ</b>\n"
-        f"🗓 {target.strftime('%d/%m/%Y')}\n{'─' * 22}"
+        f"🗓 {day.strftime('%d/%m/%Y')}\n{'─' * 22}"
     )
     send_telegram(header + "\n\n" + body)
     entry["hash"] = h
     state[key] = entry
+
+
+def process_work(now, remind_today):
+    """Quét lùi WORK_LOOKBACK ngày. Ngày bị bỏ sót (đã nhắc) rồi NV nhập sau
+    -> GỬI BÙ đúng ngày đó. Ngày cũ chưa từng theo dõi -> bỏ qua.
+    remind_today=True (buổi tối) -> hôm nay trống thì nhắc 1 lần."""
+    grid = fetch_grid(SHEET_TASKS)
+    state = load_state()
+    for offset in range(WORK_LOOKBACK, -1, -1):       # cũ -> mới
+        day = now - timedelta(days=offset)
+        _send_work_day(day, grid, state, is_today=(offset == 0), remind_today=remind_today)
     save_state(state)
 
 
@@ -328,10 +343,10 @@ def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "work"
     if mode == "ads":                  # sáng: số liệu NGÀY HÔM TRƯỚC
         process_ads(now_vn() - timedelta(days=1))
-    elif mode == "work":               # buổi tối: xử lý HÔM NAY
-        process_work(now_vn())
-    elif mode == "work_catchup":       # sáng hôm sau: bắt bù NGÀY HÔM TRƯỚC
-        process_work(now_vn() - timedelta(days=1))
+    elif mode == "work":               # buổi tối: hôm nay (có nhắc) + bù ngày cũ
+        process_work(now_vn(), remind_today=True)
+    elif mode == "work_catchup":       # sáng hôm sau: chỉ gửi bù ngày cũ, KHÔNG nhắc
+        process_work(now_vn(), remind_today=False)
     else:
         sys.exit(f"Mode không hợp lệ: {mode} (work / work_catchup / ads)")
 
