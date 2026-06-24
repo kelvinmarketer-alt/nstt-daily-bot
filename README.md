@@ -5,14 +5,17 @@ Bot gửi **2 báo cáo Telegram** theo 2 khung giờ (vì chi tiêu Ads chỉ c
 ### 🧑‍💻 Báo cáo CÔNG VIỆC — gửi tối, có nhắc & cập nhật khi NV nhập muộn
 1. **Công việc nhân viên trong ngày** — từng đầu việc, SL thực đạt/mục tiêu, % tiến độ, % KPI; tổng số việc hoàn thành / đang làm / trễ hạn / chưa bắt đầu.
 
-Chạy lại **20h, 21h, 22h** (`report_bot.py work`, dữ liệu HÔM NAY) và **7h30 sáng hôm sau**
-(`report_bot.py work_catchup`, dữ liệu NGÀY HÔM TRƯỚC). Bot nhớ trạng thái trong `state.json`:
+Chạy lại **20h, 21h, 22h** (`report_bot.py work`) và **7h30 sáng hôm sau**
+(`report_bot.py work_catchup`). Mỗi lần chạy bot **quét lùi 4 ngày** (`WORK_LOOKBACK`),
+nhớ trạng thái trong `state.json`:
 - Có việc & nội dung đổi so với lần gửi trước → gửi (đánh dấu **🔄 CẬP NHẬT** nếu đã gửi rồi).
-- Trống → gửi **⚠️ nhắc nhập** đúng 1 lần.
+- Ngày cũ từng bị bỏ sót (đã nhắc) nay NV mới nhập → gửi **⏰ GỬI BÙ** đúng ngày đó.
+- Hôm nay trống → gửi **⚠️ nhắc nhập** đúng 1 lần (không nhắc ngày cũ).
 - Không đổi → bỏ qua, không spam.
 
-→ NV quên nhập, sau đó cập nhật lúc 21h hay sáng hôm sau, bạn vẫn nhận được bản đầy đủ.
-`state.json` được workflow tự commit ngược lại repo (cần quyền `contents: write`).
+→ Ví dụ NV quên nhập ngày 24: tối 24 bot nhắc; NV nhập bù → sáng 25 bot **GỬI BÙ báo cáo ngày 24**,
+tối 25 vẫn có báo cáo ngày 25 (bạn nhận đủ cả 2 ngày). Ngày cũ bot chưa từng theo dõi sẽ bỏ qua
+để không đổ lịch sử khi mới deploy. `state.json` được workflow tự commit ngược repo (`contents: write`).
 
 ### 📊 Báo cáo ADS — `python report_bot.py ads` — gửi **9h00 sáng hôm sau** (dữ liệu NGÀY HÔM TRƯỚC)
 2. **Ads Sản phẩm trong ngày** — chi tiêu, doanh thu, chi tiêu/doanh thu, SĐT, chi tiêu/SĐT.
