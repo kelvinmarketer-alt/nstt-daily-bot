@@ -294,27 +294,40 @@ def process_work(target):
     save_state(state)
 
 
-def report_ads():
-    """Báo cáo ADS — gửi 9h sáng, dữ liệu của NGÀY HÔM TRƯỚC (chi tiêu đã chốt)."""
-    d = now_vn() - timedelta(days=1)
-    ddmm = f"{d.day:02d}/{d.month:02d}"
+def process_ads(target):
+    """Báo cáo ADS cho ngày `target` (datetime), chống gửi trùng + đánh dấu cập nhật.
+    Gửi 9h sáng và chạy lại vài mốc; chỉ gửi lại khi số liệu đổi (chốt trễ / sửa)."""
+    ddmm = f"{target.day:02d}/{target.month:02d}"
     ads = fetch_grid(SHEET_ADS)
-    header = (
-        f"📊 <b>BÁO CÁO ADS — NÔNG SẢN TUẤN TÚ</b>\n"
-        f"🗓 Số liệu ngày {d.strftime('%d/%m/%Y')}\n{'─' * 22}"
-    )
-    return "\n\n".join([
-        header,
+    body = "\n\n".join([
         section_ads_sp_day(ads, ddmm),
         section_ads_td_day(ads, ddmm),
-        section_ads_sp_month(ads, d.month),
+        section_ads_sp_month(ads, target.month),
     ])
+    state = load_state()
+    key = f"ads-{target.year}-{ddmm}"
+    entry = state.get(key, {})
+
+    h = hashlib.md5(body.encode("utf-8")).hexdigest()
+    if entry.get("hash") == h:
+        print(f"[{key}] Nội dung không đổi -> bỏ qua")
+        return
+
+    tag = " (🔄 CẬP NHẬT)" if "hash" in entry else ""
+    header = (
+        f"📊 <b>BÁO CÁO ADS{tag} — NÔNG SẢN TUẤN TÚ</b>\n"
+        f"🗓 Số liệu ngày {target.strftime('%d/%m/%Y')}\n{'─' * 22}"
+    )
+    send_telegram(header + "\n\n" + body)
+    entry["hash"] = h
+    state[key] = entry
+    save_state(state)
 
 
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "work"
-    if mode == "ads":
-        send_telegram(report_ads())
+    if mode == "ads":                  # sáng: số liệu NGÀY HÔM TRƯỚC
+        process_ads(now_vn() - timedelta(days=1))
     elif mode == "work":               # buổi tối: xử lý HÔM NAY
         process_work(now_vn())
     elif mode == "work_catchup":       # sáng hôm sau: bắt bù NGÀY HÔM TRƯỚC

@@ -1,9 +1,18 @@
-name: Báo cáo ADS (9h sáng)
+name: Báo cáo ADS (sáng, có cập nhật)
 
 on:
   schedule:
-    - cron: "0 2 * * *"    # 02:00 UTC = 09:00 VN — dữ liệu NGÀY HÔM TRƯỚC
+    - cron: "0 2 * * *"    # 09:00 VN — số liệu NGÀY HÔM TRƯỚC
+    - cron: "0 4 * * *"    # 11:00 VN — gửi lại nếu số liệu chốt/sửa muộn
+    - cron: "0 7 * * *"    # 14:00 VN
   workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ads-report
+  cancel-in-progress: false
 
 jobs:
   ads:
@@ -17,3 +26,13 @@ jobs:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python report_bot.py ads
+      - name: Lưu state
+        run: |
+          if [[ -n "$(git status --porcelain state.json)" ]]; then
+            git config user.name "nstt-bot"
+            git config user.email "bot@users.noreply.github.com"
+            git pull --rebase --autostash || true
+            git add state.json
+            git commit -m "update state [skip ci]"
+            git push
+          fi
