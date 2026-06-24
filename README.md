@@ -2,8 +2,17 @@
 
 Bot gửi **2 báo cáo Telegram** theo 2 khung giờ (vì chi tiêu Ads chỉ chốt cuối ngày):
 
-### 🧑‍💻 Báo cáo CÔNG VIỆC — `python report_bot.py work` — gửi **20h00** (dữ liệu HÔM NAY)
+### 🧑‍💻 Báo cáo CÔNG VIỆC — gửi tối, có nhắc & cập nhật khi NV nhập muộn
 1. **Công việc nhân viên trong ngày** — từng đầu việc, SL thực đạt/mục tiêu, % tiến độ, % KPI; tổng số việc hoàn thành / đang làm / trễ hạn / chưa bắt đầu.
+
+Chạy lại **20h, 21h, 22h** (`report_bot.py work`, dữ liệu HÔM NAY) và **7h30 sáng hôm sau**
+(`report_bot.py work_catchup`, dữ liệu NGÀY HÔM TRƯỚC). Bot nhớ trạng thái trong `state.json`:
+- Có việc & nội dung đổi so với lần gửi trước → gửi (đánh dấu **🔄 CẬP NHẬT** nếu đã gửi rồi).
+- Trống → gửi **⚠️ nhắc nhập** đúng 1 lần.
+- Không đổi → bỏ qua, không spam.
+
+→ NV quên nhập, sau đó cập nhật lúc 21h hay sáng hôm sau, bạn vẫn nhận được bản đầy đủ.
+`state.json` được workflow tự commit ngược lại repo (cần quyền `contents: write`).
 
 ### 📊 Báo cáo ADS — `python report_bot.py ads` — gửi **9h00 sáng hôm sau** (dữ liệu NGÀY HÔM TRƯỚC)
 2. **Ads Sản phẩm trong ngày** — chi tiêu, doanh thu, chi tiêu/doanh thu, SĐT, chi tiêu/SĐT.

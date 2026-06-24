@@ -1,22 +1,19 @@
-name: Báo cáo CÔNG VIỆC (tối, có nhắc + cập nhật)
+name: Báo cáo CÔNG VIỆC bù (sáng hôm sau)
 
 on:
   schedule:
-    - cron: "0 13 * * *"   # 20:00 VN
-    - cron: "0 14 * * *"   # 21:00 VN
-    - cron: "0 15 * * *"   # 22:00 VN
+    - cron: "30 0 * * *"   # 07:30 VN — bắt bù NV nhập muộn qua đêm cho NGÀY HÔM TRƯỚC
   workflow_dispatch:
 
-# cho phép commit state.json ngược lại repo
 permissions:
   contents: write
 
 concurrency:
-  group: work-report        # tránh 2 lần chạy đè state cùng lúc
+  group: work-report
   cancel-in-progress: false
 
 jobs:
-  work:
+  catchup:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +23,7 @@ jobs:
       - env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python report_bot.py work
+        run: python report_bot.py work_catchup
       - name: Lưu state
         run: |
           if [[ -n "$(git status --porcelain state.json)" ]]; then

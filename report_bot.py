@@ -19,6 +19,8 @@ import os
 import csv
 import io
 import sys
+import json
+import hashlib
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone, timedelta
@@ -31,6 +33,7 @@ CHAT_ID = os.environ.get("CHAT_ID", "")
 
 SHEET_TASKS = "Daily Report"
 SHEET_ADS = "Báo Cáo Ads"
+STATE_FILE = os.environ.get("STATE_FILE", "state.json")
 
 # Vị trí cột (0-based) trong sheet "Báo Cáo Ads"
 # SP theo ngày
@@ -94,9 +97,10 @@ def norm_date(s):
 
 # ---------------------------------------------------------------- 1. công việc
 def section_tasks(today_ddmm):
+    """Trả về (body_text, số_việc) cho ngày today_ddmm (dd/mm)."""
     grid = fetch_grid(SHEET_TASKS)
     if not grid:
-        return "<b>1️⃣ CÔNG VIỆC NHÂN VIÊN TRONG NGÀY</b>\n• Không đọc được sheet."
+        return ("• Không đọc được sheet.", 0)
     header = grid[0]
 
     def idx(name):
@@ -132,17 +136,15 @@ def section_tasks(today_ddmm):
             f"<i>(TĐ {col(r, c_tiendo) or '—'} · KPI {col(r, c_kpi) or '—'})</i>"
         )
 
-    out = ["<b>1️⃣ CÔNG VIỆC NHÂN VIÊN TRONG NGÀY</b>"]
     if not rows:
-        out.append("• Chưa có dữ liệu nhập cho hôm nay.")
-        return "\n".join(out)
-    out += lines
+        return ("• Chưa có dữ liệu nhập.", 0)
+    out = list(lines)
     out.append(
         f"\n📊 Tổng <b>{len(rows)}</b> việc — "
         f"✅ {buckets['Hoàn thành']} hoàn thành · 🟡 {buckets['Đang làm']} đang làm · "
         f"🔴 {buckets['Trễ hạn']} trễ hạn · ⚪ {buckets['Chưa bắt đầu']} chưa bắt đầu"
     )
-    return "\n".join(out)
+    return ("\n".join(out), len(rows))
 
 
 # ---------------------------------------------------------------- 2 & 3 & 4 (ads)
@@ -235,15 +237,61 @@ def send_telegram(text):
         print("Telegram:", r.status)
 
 
-def report_work():
-    """Báo cáo CÔNG VIỆC — gửi 20h, dữ liệu của HÔM NAY."""
-    now = now_vn()
-    ddmm = f"{now.day:02d}/{now.month:02d}"
+# ---------------------------------------------------------------- state
+def load_state():
+    try:
+        with open(STATE_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def save_state(state):
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+
+
+def process_work(target):
+    """Xử lý báo cáo CÔNG VIỆC cho ngày `target` (datetime), chống gửi trùng.
+    - Có việc & nội dung đổi so với lần gửi trước -> gửi (đánh dấu CẬP NHẬT nếu đã gửi rồi).
+    - Trống & chưa nhắc -> gửi nhắc 1 lần.
+    - Không đổi -> bỏ qua (không spam).
+    """
+    ddmm = f"{target.day:02d}/{target.month:02d}"
+    body, count = section_tasks(ddmm)
+    state = load_state()
+    key = f"{target.year}-{ddmm}"
+    entry = state.get(key, {})
+
+    if count == 0:
+        if entry.get("reminded"):
+            print(f"[{key}] Trống, đã nhắc trước đó -> bỏ qua")
+            return
+        send_telegram(
+            f"⚠️ <b>NHẮC NHẬP BÁO CÁO CÔNG VIỆC</b>\n"
+            f"🗓 Ngày {target.strftime('%d/%m/%Y')} chưa có đầu việc nào trong "
+            f"sheet <i>Daily Report</i>.\nNhân viên vui lòng cập nhật."
+        )
+        entry["reminded"] = True
+        state[key] = entry
+        save_state(state)
+        return
+
+    h = hashlib.md5(body.encode("utf-8")).hexdigest()
+    if entry.get("hash") == h:
+        print(f"[{key}] Nội dung không đổi -> bỏ qua")
+        return
+
+    is_update = "hash" in entry
+    tag = " (🔄 CẬP NHẬT)" if is_update else ""
     header = (
-        f"🧑‍💻 <b>BÁO CÁO CÔNG VIỆC — NÔNG SẢN TUẤN TÚ</b>\n"
-        f"🗓 {now.strftime('%d/%m/%Y')}\n{'─' * 22}"
+        f"🧑‍💻 <b>BÁO CÁO CÔNG VIỆC{tag} — NÔNG SẢN TUẤN TÚ</b>\n"
+        f"🗓 {target.strftime('%d/%m/%Y')}\n{'─' * 22}"
     )
-    return "\n\n".join([header, section_tasks(ddmm)])
+    send_telegram(header + "\n\n" + body)
+    entry["hash"] = h
+    state[key] = entry
+    save_state(state)
 
 
 def report_ads():
@@ -267,10 +315,12 @@ def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "work"
     if mode == "ads":
         send_telegram(report_ads())
-    elif mode == "work":
-        send_telegram(report_work())
+    elif mode == "work":               # buổi tối: xử lý HÔM NAY
+        process_work(now_vn())
+    elif mode == "work_catchup":       # sáng hôm sau: bắt bù NGÀY HÔM TRƯỚC
+        process_work(now_vn() - timedelta(days=1))
     else:
-        sys.exit(f"Mode không hợp lệ: {mode} (dùng 'work' hoặc 'ads')")
+        sys.exit(f"Mode không hợp lệ: {mode} (work / work_catchup / ads)")
 
 
 if __name__ == "__main__":
