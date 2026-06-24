@@ -1,0 +1,20 @@
+name: Báo cáo hàng ngày NSTT
+
+on:
+  schedule:
+    - cron: "0 13 * * *"   # 13:00 UTC = 20:00 giờ VN
+  workflow_dispatch:        # cho phép bấm chạy tay để test
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Gửi báo cáo
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python report_bot.py
