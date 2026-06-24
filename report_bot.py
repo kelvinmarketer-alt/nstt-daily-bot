@@ -42,6 +42,8 @@ SP_NGAY, SP_CHI, SP_SDT, SP_DTHU = 2, 3, 4, 7
 M_THANG, M_CHI, M_DTHU, M_SDT, M_SLKH, M_TYLE, M_CPDTHU = 10, 11, 12, 13, 15, 17, 18
 # TD theo ngày (block U:AB)
 TD_NGAY, TD_CHI, TD_LEAD, TD_CV = 22, 23, 24, 26
+# TD theo tháng (bảng thứ 2, dùng chung cột K:N): Tổng chi, CV, $/CV
+TDM_CHI, TDM_CV, TDM_CPCV = 11, 12, 13
 
 VN_TZ = timezone(timedelta(hours=7))
 
@@ -187,26 +189,20 @@ def section_ads_td_day(grid, today_ddmm):
     return "\n".join(out)
 
 
+def _month_rows(grid, month):
+    """Các dòng có cột Tháng == month & có Tổng chi. Thứ tự: [0]=bảng SP, [1]=bảng TD."""
+    return [r for r in grid
+            if col(r, M_THANG).strip() == str(month) and col(r, M_CHI).strip()]
+
+
 def section_ads_sp_month(grid, month):
-    """Block SP theo tháng (K:S). Lấy dòng có Tháng == tháng hiện tại,
-    chỉ trong bảng SP đầu tiên (dừng trước header bảng TD)."""
+    """Bảng SP theo tháng (bảng đầu, cột K:S)."""
     out = [f"<b>4️⃣ ADS SẢN PHẨM — THÁNG {month}</b>"]
-    target = None
-    started = False
-    for r in grid:
-        cell = col(r, M_THANG).strip()
-        if cell == "Tháng":          # gặp header bảng tháng
-            if started:
-                break                # header thứ 2 = bảng TD -> dừng
-            started = True
-            continue
-        if started and cell == str(month):
-            target = r
-            break
-    if target is None:
+    rows = _month_rows(grid, month)
+    if not rows:
         out.append("• Chưa có dữ liệu tháng này.")
         return "\n".join(out)
-
+    target = rows[0]
     chi = to_int(col(target, M_CHI))
     dthu = to_int(col(target, M_DTHU))
     slkh = to_int(col(target, M_SLKH))
@@ -218,6 +214,23 @@ def section_ads_sp_month(grid, month):
     out.append(f"• Số khách chốt: <b>{slkh}</b>")
     out.append(f"• Giá trị/khách chốt: <b>{per(dthu, slkh)}</b>")
     out.append(f"• Tỷ lệ chốt: <b>{tyle}</b>")
+    return "\n".join(out)
+
+
+def section_ads_td_month(grid, month):
+    """Bảng TD theo tháng (bảng thứ 2, cột K:N)."""
+    out = [f"<b>5️⃣ ADS TUYỂN DỤNG — THÁNG {month}</b>"]
+    rows = _month_rows(grid, month)
+    if len(rows) < 2:
+        out.append("• Chưa có dữ liệu tháng này.")
+        return "\n".join(out)
+    target = rows[1]
+    chi = to_int(col(target, TDM_CHI))
+    cv = to_int(col(target, TDM_CV))
+    cpcv = col(target, TDM_CPCV) or per(chi, cv)
+    out.append(f"• Chi tiêu: <b>{vnd(chi)}</b>")
+    out.append(f"• CV nhận: <b>{cv}</b>")
+    out.append(f"• Chi phí/CV: <b>{cpcv}</b>")
     return "\n".join(out)
 
 
@@ -318,6 +331,7 @@ def process_ads(target):
         section_ads_sp_day(ads, ddmm),
         section_ads_td_day(ads, ddmm),
         section_ads_sp_month(ads, target.month),
+        section_ads_td_month(ads, target.month),
     ])
     state = load_state()
     key = f"ads-{target.year}-{ddmm}"
