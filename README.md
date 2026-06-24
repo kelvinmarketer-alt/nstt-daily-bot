@@ -1,8 +1,11 @@
 # Bot báo cáo hàng ngày — Nông sản Tuấn Tú
 
-Mỗi 20h00 (giờ VN), bot đọc Google Sheet rồi gửi báo cáo Telegram gồm 4 mục:
+Bot gửi **2 báo cáo Telegram** theo 2 khung giờ (vì chi tiêu Ads chỉ chốt cuối ngày):
 
+### 🧑‍💻 Báo cáo CÔNG VIỆC — `python report_bot.py work` — gửi **20h00** (dữ liệu HÔM NAY)
 1. **Công việc nhân viên trong ngày** — từng đầu việc, SL thực đạt/mục tiêu, % tiến độ, % KPI; tổng số việc hoàn thành / đang làm / trễ hạn / chưa bắt đầu.
+
+### 📊 Báo cáo ADS — `python report_bot.py ads` — gửi **9h00 sáng hôm sau** (dữ liệu NGÀY HÔM TRƯỚC)
 2. **Ads Sản phẩm trong ngày** — chi tiêu, doanh thu, chi tiêu/doanh thu, SĐT, chi tiêu/SĐT.
 3. **Ads Tuyển dụng trong ngày** — chi tiêu, lead, chi phí/lead, CV, chi phí/CV.
 4. **Ads Sản phẩm tháng hiện tại** — chi tiêu, doanh thu, chi phí/doanh thu, khách chốt, giá trị/khách, tỷ lệ chốt.
@@ -34,13 +37,14 @@ vị trí cột (SP_*, M_*, TD_*) ở đầu `report_bot.py`.
 ## Chạy thử ở máy
 ```bash
 export BOT_TOKEN=xxx CHAT_ID=yyy
-python3 report_bot.py
+python3 report_bot.py work   # báo cáo công việc
+python3 report_bot.py ads    # báo cáo ads
 ```
 Không đặt token → bot in báo cáo ra màn hình (không gửi).
 
-## Đổi giờ gửi
-Sửa dòng `cron` trong `.github/workflows/daily.yml` (giờ UTC = giờ VN − 7).
-Hiện tại `0 13 * * *` = 20:00 VN.
+## Đổi giờ gửi (giờ UTC = giờ VN − 7)
+- Công việc: `cron` trong `.github/workflows/work.yml` — hiện `0 13 * * *` = 20h VN.
+- Ads: `cron` trong `.github/workflows/ads.yml` — hiện `0 2 * * *` = 9h VN.
 
 ## Lưu ý dữ liệu
 - Mục 2–3 chỉ có số khi NV đã nhập dòng của NGÀY hôm đó vào `Báo Cáo Ads`

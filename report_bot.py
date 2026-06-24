@@ -235,22 +235,42 @@ def send_telegram(text):
         print("Telegram:", r.status)
 
 
-def main():
+def report_work():
+    """Báo cáo CÔNG VIỆC — gửi 20h, dữ liệu của HÔM NAY."""
     now = now_vn()
-    today_ddmm = f"{now.day:02d}/{now.month:02d}"
+    ddmm = f"{now.day:02d}/{now.month:02d}"
+    header = (
+        f"🧑‍💻 <b>BÁO CÁO CÔNG VIỆC — NÔNG SẢN TUẤN TÚ</b>\n"
+        f"🗓 {now.strftime('%d/%m/%Y')}\n{'─' * 22}"
+    )
+    return "\n\n".join([header, section_tasks(ddmm)])
+
+
+def report_ads():
+    """Báo cáo ADS — gửi 9h sáng, dữ liệu của NGÀY HÔM TRƯỚC (chi tiêu đã chốt)."""
+    d = now_vn() - timedelta(days=1)
+    ddmm = f"{d.day:02d}/{d.month:02d}"
     ads = fetch_grid(SHEET_ADS)
     header = (
-        f"📋 <b>BÁO CÁO HÀNG NGÀY — NÔNG SẢN TUẤN TÚ</b>\n"
-        f"🗓 {now.strftime('%d/%m/%Y')} (cuối ngày)\n{'─' * 22}"
+        f"📊 <b>BÁO CÁO ADS — NÔNG SẢN TUẤN TÚ</b>\n"
+        f"🗓 Số liệu ngày {d.strftime('%d/%m/%Y')}\n{'─' * 22}"
     )
-    msg = "\n\n".join([
+    return "\n\n".join([
         header,
-        section_tasks(today_ddmm),
-        section_ads_sp_day(ads, today_ddmm),
-        section_ads_td_day(ads, today_ddmm),
-        section_ads_sp_month(ads, now.month),
+        section_ads_sp_day(ads, ddmm),
+        section_ads_td_day(ads, ddmm),
+        section_ads_sp_month(ads, d.month),
     ])
-    send_telegram(msg)
+
+
+def main():
+    mode = sys.argv[1] if len(sys.argv) > 1 else "work"
+    if mode == "ads":
+        send_telegram(report_ads())
+    elif mode == "work":
+        send_telegram(report_work())
+    else:
+        sys.exit(f"Mode không hợp lệ: {mode} (dùng 'work' hoặc 'ads')")
 
 
 if __name__ == "__main__":
