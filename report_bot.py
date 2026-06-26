@@ -23,7 +23,7 @@ import json
 import hashlib
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 
 SHEET_ID = os.environ.get(
     "SHEET_ID", "1zkiqyJCV88gszPncZgNFhNQRDP6fvhAWaZ5Sgb479_I"
@@ -97,14 +97,35 @@ def norm_date(s):
     return (s or "").strip()
 
 
+def parse_date(s, default_year):
+    """'dd/mm/yyyy' hoặc 'dd/mm' -> datetime.date (thiếu năm dùng default_year)."""
+    parts = (s or "").strip().split("/")
+    if len(parts) < 2 or not (parts[0].isdigit() and parts[1].isdigit()):
+        return None
+    y = int(parts[2]) if len(parts) >= 3 and parts[2].isdigit() else default_year
+    try:
+        return date(y, int(parts[1]), int(parts[0]))
+    except ValueError:
+        return None
+
+
+def _is_done(st):
+    s = (st or "").lower()
+    return "hoàn thành" in s or "tạm dừng" in s
+
+
 # ---------------------------------------------------------------- 1. công việc
-def section_tasks(today_ddmm, grid=None):
-    """Trả về (body_text, số_việc) cho ngày today_ddmm (dd/mm)."""
+def section_tasks(day, grid=None):
+    """Trả về (body_text, số_việc) cho ngày `day` (datetime/date).
+    Gom 3 nhóm: việc nhập hôm nay / đang làm tiếp (chưa xong, còn hạn) / quá hạn chưa xong.
+    NV nhập 1 lần; việc đang dở tự hiện lại các ngày sau cho tới khi xong hoặc quá hạn."""
     if grid is None:
         grid = fetch_grid(SHEET_TASKS)
     if not grid:
         return ("• Không đọc được sheet.", 0)
     header = grid[0]
+    target_ddmm = f"{day.day:02d}/{day.month:02d}"
+    target_date = day if isinstance(day, date) and not isinstance(day, datetime) else day.date()
 
     def idx(name):
         for i, h in enumerate(header):
@@ -112,42 +133,73 @@ def section_tasks(today_ddmm, grid=None):
                 return i
         return -1
 
-    c_ngay = idx("NGÀY")
-    c_dv = idx("ĐẦU VIỆC")
-    c_mt = idx("MỤC TIÊU SL")
-    c_td = idx("THỰC ĐẠT SL")
-    c_dv_unit = idx("ĐƠN VỊ")
-    c_tiendo = idx("% TIẾN ĐỘ")
-    c_kpi = idx("% ĐẠT KPI")
-    c_tt = idx("TRẠNG THÁI")
+    c_ngay, c_dv = idx("NGÀY"), idx("ĐẦU VIỆC")
+    c_mt, c_td, c_unit = idx("MỤC TIÊU SL"), idx("THỰC ĐẠT SL"), idx("ĐƠN VỊ")
+    c_tiendo, c_kpi, c_tt = idx("% TIẾN ĐỘ"), idx("% ĐẠT KPI"), idx("TRẠNG THÁI")
+    c_deadline = idx("DEADLINE")
 
-    rows = [r for r in grid[1:] if norm_date(col(r, c_ngay)) == today_ddmm]
     buckets = {"Hoàn thành": 0, "Trễ hạn": 0, "Đang làm": 0, "Chưa bắt đầu": 0}
-    lines = []
-    for r in rows:
+
+    def fmt(r, show_deadline=False):
         st = col(r, c_tt)
-        key = next((k for k in buckets if k.lower() in st.lower()), None)
-        if key:
-            buckets[key] += 1
+        k = next((b for b in buckets if b.lower() in st.lower()), None)
+        if k:
+            buckets[k] += 1
         icon = {"Hoàn thành": "✅", "Đang làm": "🟡",
-                "Trễ hạn": "🔴", "Chưa bắt đầu": "⚪"}.get(key, "▫️")
+                "Trễ hạn": "🔴", "Chưa bắt đầu": "⚪"}.get(k, "▫️")
         sl = ""
         if col(r, c_mt) or col(r, c_td):
-            sl = f" — {col(r, c_td) or 0}/{col(r, c_mt) or 0} {col(r, c_dv_unit)}".rstrip()
-        lines.append(
-            f"{icon} <b>{col(r, c_dv)}</b>{sl}  "
-            f"<i>(TĐ {col(r, c_tiendo) or '—'} · KPI {col(r, c_kpi) or '—'})</i>"
-        )
+            sl = f" — {col(r, c_td) or 0}/{col(r, c_mt) or 0} {col(r, c_unit)}".rstrip()
+        hạn = ""
+        if show_deadline and col(r, c_deadline):
+            hạn = f" · hạn {norm_date(col(r, c_deadline))}"
+        return (f"{icon} <b>{col(r, c_dv)}</b>{sl}  "
+                f"<i>(TĐ {col(r, c_tiendo) or '—'} · KPI {col(r, c_kpi) or '—'}{hạn})</i>")
 
-    if not rows:
+    def is_complete(r):
+        if _is_done(col(r, c_tt)):
+            return True
+        mt, td = to_int(col(r, c_mt)), to_int(col(r, c_td))
+        if mt and td >= mt:                    # thực đạt >= mục tiêu
+            return True
+        return to_int(col(r, c_tiendo)) >= 100  # % tiến độ >= 100
+
+    today_rows, ongoing, overdue = [], [], []
+    for r in grid[1:]:
+        ng = norm_date(col(r, c_ngay))
+        if not ng:
+            continue
+        if ng == target_ddmm:                 # việc nhập đúng hôm nay
+            today_rows.append(r)
+            continue
+        if is_complete(r):                     # ngày khác & đã xong -> bỏ
+            continue
+        dl = parse_date(col(r, c_deadline), target_date.year)
+        if dl is None or dl >= target_date:    # chưa xong, còn hạn -> kéo sang
+            ongoing.append(r)
+        else:                                  # chưa xong, quá hạn
+            overdue.append(r)
+
+    total = len(today_rows) + len(ongoing) + len(overdue)
+    if total == 0:
         return ("• Chưa có dữ liệu nhập.", 0)
-    out = list(lines)
-    out.append(
-        f"\n📊 Tổng <b>{len(rows)}</b> việc — "
+
+    parts = []
+    if today_rows:
+        parts.append("🆕 <b>Việc nhập hôm nay</b>\n" +
+                     "\n".join(fmt(r) for r in today_rows))
+    if ongoing:
+        parts.append("🔄 <b>Đang làm tiếp (từ trước)</b>\n" +
+                     "\n".join(fmt(r, show_deadline=True) for r in ongoing))
+    if overdue:
+        parts.append("🔴 <b>Quá hạn chưa xong</b>\n" +
+                     "\n".join(fmt(r, show_deadline=True) for r in overdue))
+    summary = (
+        f"📊 Tổng <b>{total}</b> việc — "
         f"✅ {buckets['Hoàn thành']} hoàn thành · 🟡 {buckets['Đang làm']} đang làm · "
         f"🔴 {buckets['Trễ hạn']} trễ hạn · ⚪ {buckets['Chưa bắt đầu']} chưa bắt đầu"
     )
-    return ("\n".join(out), len(rows))
+    return ("\n\n".join(parts) + "\n\n" + summary, total)
 
 
 # ---------------------------------------------------------------- 2 & 3 & 4 (ads)
@@ -274,7 +326,7 @@ def _send_work_day(day, grid, state, is_today, remind_today):
     key = f"{day.year}-{ddmm}"
     entry = state.get(key, {})
     seen = key in state               # bot đã từng theo dõi ngày này chưa
-    body, count = section_tasks(ddmm, grid)
+    body, count = section_tasks(day, grid)
 
     if count == 0:
         # Chỉ nhắc cho đúng HÔM NAY buổi tối; không nhắc ngày cũ.
