@@ -114,18 +114,9 @@ def _is_done(st):
     return "hoàn thành" in s or "tạm dừng" in s
 
 
-# ---------------------------------------------------------------- 1. công việc
-def section_tasks(day, grid=None):
-    """Trả về (body_text, số_việc) cho ngày `day` (datetime/date).
-    Gom 3 nhóm: việc nhập hôm nay / đang làm tiếp (chưa xong, còn hạn) / quá hạn chưa xong.
-    NV nhập 1 lần; việc đang dở tự hiện lại các ngày sau cho tới khi xong hoặc quá hạn."""
-    if grid is None:
-        grid = fetch_grid(SHEET_TASKS)
-    if not grid:
-        return ("• Không đọc được sheet.", 0)
-    header = grid[0]
-    target_ddmm = f"{day.day:02d}/{day.month:02d}"
-    target_date = day if isinstance(day, date) and not isinstance(day, datetime) else day.date()
+def _task_cols(grid):
+    """Map tên cột -> chỉ số, dùng chung cho mọi hàm xử lý công việc."""
+    header = grid[0] if grid else []
 
     def idx(name):
         for i, h in enumerate(header):
@@ -133,73 +124,121 @@ def section_tasks(day, grid=None):
                 return i
         return -1
 
-    c_ngay, c_dv = idx("NGÀY"), idx("ĐẦU VIỆC")
-    c_mt, c_td, c_unit = idx("MỤC TIÊU SL"), idx("THỰC ĐẠT SL"), idx("ĐƠN VỊ")
-    c_tiendo, c_kpi, c_tt = idx("% TIẾN ĐỘ"), idx("% ĐẠT KPI"), idx("TRẠNG THÁI")
-    c_deadline = idx("DEADLINE")
+    return {k: idx(v) for k, v in {
+        "ngay": "NGÀY", "dv": "ĐẦU VIỆC", "mt": "MỤC TIÊU SL", "td": "THỰC ĐẠT SL",
+        "unit": "ĐƠN VỊ", "tiendo": "% TIẾN ĐỘ", "kpi": "% ĐẠT KPI",
+        "tt": "TRẠNG THÁI", "deadline": "DEADLINE",
+    }.items()}
 
-    buckets = {"Hoàn thành": 0, "Trễ hạn": 0, "Đang làm": 0, "Chưa bắt đầu": 0}
 
-    def fmt(r, show_deadline=False):
-        st = col(r, c_tt)
-        k = next((b for b in buckets if b.lower() in st.lower()), None)
-        if k:
-            buckets[k] += 1
-        icon = {"Hoàn thành": "✅", "Đang làm": "🟡",
-                "Trễ hạn": "🔴", "Chưa bắt đầu": "⚪"}.get(k, "▫️")
-        sl = ""
-        if col(r, c_mt) or col(r, c_td):
-            sl = f" — {col(r, c_td) or 0}/{col(r, c_mt) or 0} {col(r, c_unit)}".rstrip()
-        hạn = ""
-        if show_deadline and col(r, c_deadline):
-            hạn = f" · hạn {norm_date(col(r, c_deadline))}"
-        return (f"{icon} <b>{col(r, c_dv)}</b>{sl}  "
-                f"<i>(TĐ {col(r, c_tiendo) or '—'} · KPI {col(r, c_kpi) or '—'}{hạn})</i>")
+def _row_complete(r, c):
+    """Việc coi như XONG nếu: TRẠNG THÁI Hoàn thành/Tạm dừng, hoặc thực đạt >= mục tiêu,
+    hoặc % tiến độ >= 100 (lọc việc lặp ngày bị bỏ trống ô trạng thái)."""
+    if _is_done(col(r, c["tt"])):
+        return True
+    mt, td = to_int(col(r, c["mt"])), to_int(col(r, c["td"]))
+    if mt and td >= mt:
+        return True
+    return to_int(col(r, c["tiendo"])) >= 100
 
-    def is_complete(r):
-        if _is_done(col(r, c_tt)):
-            return True
-        mt, td = to_int(col(r, c_mt)), to_int(col(r, c_td))
-        if mt and td >= mt:                    # thực đạt >= mục tiêu
-            return True
-        return to_int(col(r, c_tiendo)) >= 100  # % tiến độ >= 100
 
-    today_rows, ongoing, overdue = [], [], []
+def _task_key(r, c):
+    return f"{norm_date(col(r, c['ngay']))}|{col(r, c['dv']).strip()}"
+
+
+def _fmt_task(r, c, show_deadline=False):
+    st = col(r, c["tt"])
+    icon = {"hoàn thành": "✅", "đang làm": "🟡", "trễ": "🔴",
+            "chưa bắt đầu": "⚪", "tạm dừng": "⏸"}
+    if _row_complete(r, c):
+        ic = "✅"
+    else:
+        ic = next((v for k, v in icon.items() if k in st.lower()), "▫️")
+    sl = ""
+    if col(r, c["mt"]) or col(r, c["td"]):
+        sl = f" — {col(r, c['td']) or 0}/{col(r, c['mt']) or 0} {col(r, c['unit'])}".rstrip()
+    hạn = ""
+    if show_deadline and col(r, c["deadline"]):
+        hạn = f" · hạn {norm_date(col(r, c['deadline']))}"
+    return (f"{ic} <b>{col(r, c['dv'])}</b>{sl}  "
+            f"<i>(TĐ {col(r, c['tiendo']) or '—'} · KPI {col(r, c['kpi']) or '—'}{hạn})</i>")
+
+
+# ---------------------------------------------------------------- 1. công việc
+def section_tasks(day, grid=None):
+    """Trả về (body_text, số_việc) cho ngày `day`. Tách 4 nhóm:
+    ✅ Hoàn thành hôm nay (việc nhập hôm nay đã xong), 🟡 Đang làm hôm nay,
+    🔄 Đang làm tiếp (việc cũ chưa xong còn hạn), 🔴 Quá hạn chưa xong."""
+    if grid is None:
+        grid = fetch_grid(SHEET_TASKS)
+    if not grid:
+        return ("• Không đọc được sheet.", 0)
+    c = _task_cols(grid)
+    target_ddmm = f"{day.day:02d}/{day.month:02d}"
+    target_date = day if isinstance(day, date) and not isinstance(day, datetime) else day.date()
+
+    today_done, today_ongoing, ongoing, overdue = [], [], [], []
     for r in grid[1:]:
-        ng = norm_date(col(r, c_ngay))
+        ng = norm_date(col(r, c["ngay"]))
         if not ng:
             continue
-        if ng == target_ddmm:                 # việc nhập đúng hôm nay
-            today_rows.append(r)
+        done = _row_complete(r, c)
+        if ng == target_ddmm:                  # việc nhập đúng hôm nay
+            (today_done if done else today_ongoing).append(r)
             continue
-        if is_complete(r):                     # ngày khác & đã xong -> bỏ
+        if done:                               # ngày khác & đã xong -> bỏ
             continue
-        dl = parse_date(col(r, c_deadline), target_date.year)
-        if dl is None or dl >= target_date:    # chưa xong, còn hạn -> kéo sang
-            ongoing.append(r)
-        else:                                  # chưa xong, quá hạn
-            overdue.append(r)
+        dl = parse_date(col(r, c["deadline"]), target_date.year)
+        (ongoing if (dl is None or dl >= target_date) else overdue).append(r)
 
-    total = len(today_rows) + len(ongoing) + len(overdue)
+    done_lines = [_fmt_task(r, c) for r in today_done]
+    total = len(done_lines) + len(today_ongoing) + len(ongoing) + len(overdue)
     if total == 0:
         return ("• Chưa có dữ liệu nhập.", 0)
 
     parts = []
-    if today_rows:
-        parts.append("🆕 <b>Việc nhập hôm nay</b>\n" +
-                     "\n".join(fmt(r) for r in today_rows))
+    if done_lines:
+        parts.append("✅ <b>Hoàn thành hôm nay</b>\n" + "\n".join(done_lines))
+    if today_ongoing:
+        parts.append("🟡 <b>Đang làm hôm nay</b>\n" +
+                     "\n".join(_fmt_task(r, c) for r in today_ongoing))
     if ongoing:
         parts.append("🔄 <b>Đang làm tiếp (từ trước)</b>\n" +
-                     "\n".join(fmt(r, show_deadline=True) for r in ongoing))
+                     "\n".join(_fmt_task(r, c, show_deadline=True) for r in ongoing))
     if overdue:
         parts.append("🔴 <b>Quá hạn chưa xong</b>\n" +
-                     "\n".join(fmt(r, show_deadline=True) for r in overdue))
+                     "\n".join(_fmt_task(r, c, show_deadline=True) for r in overdue))
     summary = (
-        f"📊 Tổng <b>{total}</b> việc — "
-        f"✅ {buckets['Hoàn thành']} hoàn thành · 🟡 {buckets['Đang làm']} đang làm · "
-        f"🔴 {buckets['Trễ hạn']} trễ hạn · ⚪ {buckets['Chưa bắt đầu']} chưa bắt đầu"
+        f"📊 Tổng <b>{total}</b> việc — ✅ {len(done_lines)} hoàn thành · "
+        f"🟡 {len(today_ongoing) + len(ongoing)} đang làm · 🔴 {len(overdue)} quá hạn"
     )
     return ("\n\n".join(parts) + "\n\n" + summary, total)
+
+
+def _detect_newly_done(grid, state, now):
+    """Phát hiện việc KÉO DÀI vừa chuyển sang hoàn thành (so với lần chạy trước) để
+    báo 1 lần dưới nhóm ✅. Cập nhật state['ongoing_seen'] và state['done_reported']."""
+    if not grid:
+        return []
+    c = _task_cols(grid)
+    today_ddmm = f"{now.day:02d}/{now.month:02d}"
+    seen = state.get("ongoing_seen", {})          # việc bot đã thấy 'đang làm'
+    done_rep = state.setdefault("done_reported", {})
+    cur_ongoing, announce = {}, []
+    for r in grid[1:]:
+        ng = norm_date(col(r, c["ngay"]))
+        if not ng:
+            continue
+        key = _task_key(r, c)
+        if _row_complete(r, c):
+            if key not in done_rep and (key in seen or ng == today_ddmm):
+                done_rep[key] = today_ddmm        # đánh dấu đã xử lý
+                if key in seen and ng != today_ddmm:
+                    announce.append(r)            # việc cũ đang làm -> vừa xong
+        else:
+            cur_ongoing[key] = 1
+    state["ongoing_seen"] = cur_ongoing
+    return announce
 
 
 # ---------------------------------------------------------------- 2 & 3 & 4 (ads)
@@ -346,6 +385,9 @@ def _send_work_day(day, grid, state, is_today, remind_today):
     # Ngày CŨ mà bot chưa từng theo dõi -> bỏ qua, tránh dump lịch sử khi mới deploy.
     if not is_today and not seen:
         return
+    # Ngày CŨ đã từng gửi báo cáo -> không re-gửi bản cập nhật (thay đổi đã có ở 🎉 / báo cáo hôm nay).
+    if not is_today and "hash" in entry:
+        return
 
     if "hash" in entry:
         tag = " (🔄 CẬP NHẬT)"         # đã gửi trước đó, giờ NV sửa
@@ -368,9 +410,19 @@ def process_work(now, remind_today):
     remind_today=True (buổi tối) -> hôm nay trống thì nhắc 1 lần."""
     grid = fetch_grid(SHEET_TASKS)
     state = load_state()
+    newly_done = _detect_newly_done(grid, state, now)  # việc kéo dài vừa hoàn thành
+    if newly_done:                                     # báo riêng 1 lần, không đụng dedup ngày
+        c = _task_cols(grid)
+        lines = "\n".join(_fmt_task(r, c, show_deadline=True) for r in newly_done)
+        send_telegram(
+            f"🎉 <b>VIỆC VỪA HOÀN THÀNH</b> (việc kéo dài nhiều ngày)\n{'─' * 22}\n{lines}"
+        )
     for offset in range(WORK_LOOKBACK, -1, -1):       # cũ -> mới
         day = now - timedelta(days=offset)
-        _send_work_day(day, grid, state, is_today=(offset == 0), remind_today=remind_today)
+        is_today = (offset == 0)
+        # nếu hôm nay vừa có việc kéo dài hoàn thành thì không nhắc 'trống' nữa
+        rt = remind_today and not (is_today and newly_done)
+        _send_work_day(day, grid, state, is_today, rt)
     save_state(state)
 
 
