@@ -6,15 +6,19 @@
     "hash": "02f4442f3f77e2c2944b4b23e03944ca"
   },
   "2026-26/06": {
-    "reminded": true
+    "reminded": true,
+    "hash": "bbac6c495db06cb56d9f1894409fbaff"
   },
   "done_reported": {},
-  "ongoing_seen": {},
+  "ongoing_seen": {
+    "24/06|Tạo tài khoản": 1
+  },
   "ads-2026-25/06": {
     "hash": "a44e4f054013fcb481e2a3e6011fe360"
   },
   "2026-27/06": {
-    "reminded": true
+    "reminded": true,
+    "hash": "7a087893824fcaad10eca0ed6f640eac"
   },
   "ads-2026-26/06": {
     "hash": "9b8a39f72e64f24b7f29d0b841871fdc"
@@ -23,7 +27,8 @@
     "hash": "9ea84224bd88c2800bf42f28c800992a"
   },
   "2026-28/06": {
-    "reminded": true
+    "reminded": true,
+    "hash": "aae67eb7d0bdbacc7b12db557affd3e8"
   },
   "ads-2026-28/06": {
     "hash": "526294cafe32bfa95798474511b5b29b"
