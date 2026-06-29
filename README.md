@@ -1,23 +1,22 @@
 # Bot báo cáo hàng ngày — Nông sản Tuấn Tú
 
-Bot gửi **2 báo cáo Telegram** theo 2 khung giờ (vì chi tiêu Ads chỉ chốt cuối ngày):
+Bot gửi **1 báo cáo buổi sáng** (`python report_bot.py daily`), **tất cả là số liệu NGÀY HÔM TRƯỚC**
+— vì NV và chi tiêu Ads chỉ chốt cuối ngày, nên sáng hôm sau mới đủ dữ liệu. Chạy **9h** và lặp lại
+**11h, 14h** để bắt cập nhật muộn (chỉ gửi lại khi nội dung đổi).
 
-### 🧑‍💻 Báo cáo CÔNG VIỆC — gửi tối, có nhắc & cập nhật khi NV nhập muộn
-1. **Công việc nhân viên trong ngày** — từng đầu việc, SL thực đạt/mục tiêu, % tiến độ, % KPI; tổng số việc hoàn thành / đang làm / trễ hạn / chưa bắt đầu.
+### 🧑‍💻 Phần CÔNG VIỆC (của ngày hôm trước)
+1. **Công việc nhân viên** — tách 4 nhóm: ✅ Hoàn thành / 🟡 Đang làm / 🔄 Đang làm tiếp (việc cũ còn hạn) /
+   🔴 Quá hạn; kèm dòng tổng. Việc kéo dài vừa xong → tin riêng **🎉 VIỆC VỪA HOÀN THÀNH**.
 
-Chạy lại **20h, 21h, 22h** (`report_bot.py work`) và **7h30 sáng hôm sau**
-(`report_bot.py work_catchup`). Mỗi lần chạy bot **quét lùi 4 ngày** (`WORK_LOOKBACK`),
-nhớ trạng thái trong `state.json`:
-- Có việc & nội dung đổi so với lần gửi trước → gửi (đánh dấu **🔄 CẬP NHẬT** nếu đã gửi rồi).
-- Ngày cũ từng bị bỏ sót (đã nhắc) nay NV mới nhập → gửi **⏰ GỬI BÙ** đúng ngày đó.
-- Hôm nay trống → gửi **⚠️ nhắc nhập** đúng 1 lần (không nhắc ngày cũ).
+Bot **quét lùi 4 ngày** (`WORK_LOOKBACK`), nhớ trạng thái trong `state.json`:
+- Nội dung đổi so với lần gửi trước → gửi (đánh dấu **🔄 CẬP NHẬT**).
+- Ngày cũ từng bị bỏ sót (đã nhắc) nay NV mới nhập → **⏰ GỬI BÙ** đúng ngày đó.
+- Ngày hôm trước trống → **⚠️ nhắc nhập** 1 lần.
 - Không đổi → bỏ qua, không spam.
 
-→ Ví dụ NV quên nhập ngày 24: tối 24 bot nhắc; NV nhập bù → sáng 25 bot **GỬI BÙ báo cáo ngày 24**,
-tối 25 vẫn có báo cáo ngày 25 (bạn nhận đủ cả 2 ngày). Ngày cũ bot chưa từng theo dõi sẽ bỏ qua
-để không đổ lịch sử khi mới deploy. `state.json` được workflow tự commit ngược repo (`contents: write`).
+`state.json` được workflow tự commit ngược repo (`contents: write`).
 
-### 📊 Báo cáo ADS — `python report_bot.py ads` — gửi **9h00 sáng hôm sau** (dữ liệu NGÀY HÔM TRƯỚC)
+### 📊 Phần ADS (của ngày hôm trước)
 2. **Ads Sản phẩm trong ngày** — chi tiêu, doanh thu, chi tiêu/doanh thu, SĐT, chi tiêu/SĐT.
 3. **Ads Tuyển dụng trong ngày** — chi tiêu, lead, chi phí/lead, CV, chi phí/CV.
 4. **Ads Sản phẩm tháng hiện tại** — chi tiêu, doanh thu, chi phí/doanh thu, khách chốt, giá trị/khách, tỷ lệ chốt.
@@ -49,17 +48,19 @@ vị trí cột (SP_*, M_*, TD_*) ở đầu `report_bot.py`.
 ## Chạy thử ở máy
 ```bash
 export BOT_TOKEN=xxx CHAT_ID=yyy
-python3 report_bot.py work   # báo cáo công việc
-python3 report_bot.py ads    # báo cáo ads
+python3 report_bot.py daily   # công việc + ads (của ngày hôm trước)
+python3 report_bot.py work    # chỉ phần công việc
+python3 report_bot.py ads     # chỉ phần ads
 ```
 Không đặt token → bot in báo cáo ra màn hình (không gửi).
 
 ## Đổi giờ gửi (giờ UTC = giờ VN − 7)
-- Công việc: `cron` trong `.github/workflows/work.yml` — hiện `0 13 * * *` = 20h VN.
-- Ads: `cron` trong `.github/workflows/ads.yml` — hiện `0 2 * * *` = 9h VN.
+- `cron` trong `.github/workflows/daily.yml` — hiện `0 2/4/7 * * *` = 9h/11h/14h VN.
 
 ## Lưu ý dữ liệu
-- Mục 2–3 chỉ có số khi NV đã nhập dòng của NGÀY hôm đó vào `Báo Cáo Ads`
+- Cột A của `Daily Report` (ngày) phải để nguyên — nếu đổi/xoá tiêu đề "NGÀY" bot vẫn
+  chạy nhờ fallback về cột A, nhưng nên giữ tên "NGÀY" cho rõ.
+- Phần Ads chỉ có số khi NV đã nhập dòng của NGÀY hôm đó vào `Báo Cáo Ads`
   (block SP cột A–H, block TD cột U–AB). Thiếu dòng → bot báo "chưa có dữ liệu".
-- Mục 4 cần dòng của tháng hiện tại trong bảng SP-theo-tháng (cột K–S) có số.
+- Tổng tháng cần dòng của tháng hiện tại trong các bảng K:S (SP) / K:N (TD) có số.
 - Ngày trong sheet dạng `d/m` hoặc `dd/mm/yyyy` — bot tự nhận cả hai.
