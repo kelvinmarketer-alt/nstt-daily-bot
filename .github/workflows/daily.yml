@@ -1,19 +1,21 @@
-name: Báo cáo CÔNG VIỆC bù (sáng hôm sau)
+name: Báo cáo sáng (công việc + ads, số liệu hôm trước)
 
 on:
   schedule:
-    - cron: "30 0 * * *"   # 07:30 VN — bắt bù NV nhập muộn qua đêm cho NGÀY HÔM TRƯỚC
+    - cron: "0 2 * * *"    # 09:00 VN
+    - cron: "0 4 * * *"    # 11:00 VN — gửi lại nếu NV/ads cập nhật muộn
+    - cron: "0 7 * * *"    # 14:00 VN
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: work-report
+  group: daily-report
   cancel-in-progress: false
 
 jobs:
-  catchup:
+  daily:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +25,7 @@ jobs:
       - env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python report_bot.py work_catchup
+        run: python report_bot.py daily
       - name: Lưu state
         run: |
           if [[ -n "$(git status --porcelain state.json)" ]]; then

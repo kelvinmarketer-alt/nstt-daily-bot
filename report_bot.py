@@ -68,7 +68,7 @@ def fetch_grid(sheet_name):
 
 
 def col(row, idx):
-    return row[idx] if idx < len(row) else ""
+    return row[idx] if 0 <= idx < len(row) else ""   # idx<0 (không tìm thấy cột) -> "" thay vì lấy nhầm cột cuối
 
 
 def to_int(s):
@@ -124,11 +124,14 @@ def _task_cols(grid):
                 return i
         return -1
 
-    return {k: idx(v) for k, v in {
+    c = {k: idx(v) for k, v in {
         "ngay": "NGÀY", "dv": "ĐẦU VIỆC", "mt": "MỤC TIÊU SL", "td": "THỰC ĐẠT SL",
         "unit": "ĐƠN VỊ", "tiendo": "% TIẾN ĐỘ", "kpi": "% ĐẠT KPI",
         "tt": "TRẠNG THÁI", "deadline": "DEADLINE",
     }.items()}
+    if c["ngay"] < 0:        # cột A đôi khi bị đổi/xoá tiêu đề "NGÀY" -> ngày luôn nằm ở cột đầu
+        c["ngay"] = 0
+    return c
 
 
 def _row_complete(r, c):
@@ -198,9 +201,9 @@ def section_tasks(day, grid=None):
 
     parts = []
     if done_lines:
-        parts.append("✅ <b>Hoàn thành hôm nay</b>\n" + "\n".join(done_lines))
+        parts.append("✅ <b>Hoàn thành trong ngày</b>\n" + "\n".join(done_lines))
     if today_ongoing:
-        parts.append("🟡 <b>Đang làm hôm nay</b>\n" +
+        parts.append("🟡 <b>Đang làm trong ngày</b>\n" +
                      "\n".join(_fmt_task(r, c) for r in today_ongoing))
     if ongoing:
         parts.append("🔄 <b>Đang làm tiếp (từ trước)</b>\n" +
@@ -404,13 +407,13 @@ def _send_work_day(day, grid, state, is_today, remind_today):
     state[key] = entry
 
 
-def process_work(now, remind_today):
-    """Quét lùi WORK_LOOKBACK ngày. Ngày bị bỏ sót (đã nhắc) rồi NV nhập sau
-    -> GỬI BÙ đúng ngày đó. Ngày cũ chưa từng theo dõi -> bỏ qua.
-    remind_today=True (buổi tối) -> hôm nay trống thì nhắc 1 lần."""
+def process_work(anchor, remind_today):
+    """`anchor` = ngày cần báo cáo (NGÀY HÔM TRƯỚC). Quét lùi WORK_LOOKBACK ngày từ anchor:
+    ngày bị bỏ sót (đã nhắc) rồi NV nhập sau -> GỬI BÙ đúng ngày đó; ngày cũ chưa từng theo dõi -> bỏ qua.
+    remind_today=True -> nếu ngày anchor trống thì nhắc 1 lần."""
     grid = fetch_grid(SHEET_TASKS)
     state = load_state()
-    newly_done = _detect_newly_done(grid, state, now)  # việc kéo dài vừa hoàn thành
+    newly_done = _detect_newly_done(grid, state, anchor)  # việc kéo dài vừa hoàn thành
     if newly_done:                                     # báo riêng 1 lần, không đụng dedup ngày
         c = _task_cols(grid)
         lines = "\n".join(_fmt_task(r, c, show_deadline=True) for r in newly_done)
@@ -418,11 +421,11 @@ def process_work(now, remind_today):
             f"🎉 <b>VIỆC VỪA HOÀN THÀNH</b> (việc kéo dài nhiều ngày)\n{'─' * 22}\n{lines}"
         )
     for offset in range(WORK_LOOKBACK, -1, -1):       # cũ -> mới
-        day = now - timedelta(days=offset)
-        is_today = (offset == 0)
-        # nếu hôm nay vừa có việc kéo dài hoàn thành thì không nhắc 'trống' nữa
-        rt = remind_today and not (is_today and newly_done)
-        _send_work_day(day, grid, state, is_today, rt)
+        day = anchor - timedelta(days=offset)
+        is_anchor = (offset == 0)
+        # nếu ngày anchor vừa có việc kéo dài hoàn thành thì không nhắc 'trống' nữa
+        rt = remind_today and not (is_anchor and newly_done)
+        _send_work_day(day, grid, state, is_anchor, rt)
     save_state(state)
 
 
@@ -458,15 +461,15 @@ def process_ads(target):
 
 
 def main():
-    mode = sys.argv[1] if len(sys.argv) > 1 else "work"
-    if mode == "ads":                  # sáng: số liệu NGÀY HÔM TRƯỚC
-        process_ads(now_vn() - timedelta(days=1))
-    elif mode == "work":               # buổi tối: hôm nay (có nhắc) + bù ngày cũ
-        process_work(now_vn(), remind_today=True)
-    elif mode == "work_catchup":       # sáng hôm sau: chỉ gửi bù ngày cũ, KHÔNG nhắc
-        process_work(now_vn(), remind_today=False)
-    else:
-        sys.exit(f"Mode không hợp lệ: {mode} (work / work_catchup / ads)")
+    # TẤT CẢ báo cáo đều là số liệu NGÀY HÔM TRƯỚC, gửi buổi sáng (9h + chạy lại 11h/14h).
+    mode = sys.argv[1] if len(sys.argv) > 1 else "daily"
+    yesterday = now_vn() - timedelta(days=1)
+    if mode in ("daily", "work"):      # báo cáo công việc của ngày hôm trước
+        process_work(yesterday, remind_today=True)
+    if mode in ("daily", "ads"):       # báo cáo ads của ngày hôm trước
+        process_ads(yesterday)
+    if mode not in ("daily", "work", "ads"):
+        sys.exit(f"Mode không hợp lệ: {mode} (daily / work / ads)")
 
 
 if __name__ == "__main__":
