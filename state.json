@@ -9,9 +9,14 @@
     "reminded": true,
     "hash": "bbac6c495db06cb56d9f1894409fbaff"
   },
-  "done_reported": {},
+  "done_reported": {
+    "29/06|Check & rep tin nhắn, comment khách": "29/06"
+  },
   "ongoing_seen": {
-    "24/06|Tạo tài khoản": 1
+    "24/06|Tạo tài khoản": 1,
+    "30/06|1 bài/ngày - 1500 ký tự - có gắn link bài viết web": 1,
+    "30/06|200 bài SEO cho 200 bộ từ khoá": 1,
+    "30/06|check SEO VĐG để share social": 1
   },
   "ads-2026-25/06": {
     "hash": "a44e4f054013fcb481e2a3e6011fe360"
@@ -34,6 +39,10 @@
     "hash": "526294cafe32bfa95798474511b5b29b"
   },
   "2026-29/06": {
-    "reminded": true
+    "reminded": true,
+    "hash": "b9f814aac619f42d520f41b7ba73b0c2"
+  },
+  "ads-2026-29/06": {
+    "hash": "01942644145e9293a884e1f1ef1e95e2"
   }
 }
