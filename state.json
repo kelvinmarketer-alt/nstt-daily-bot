@@ -11,14 +11,18 @@
   },
   "done_reported": {
     "29/06|Check & rep tin nhắn, comment khách": "29/06",
-    "30/06|200 bài SEO cho 200 bộ từ khoá": "29/06"
+    "30/06|200 bài SEO cho 200 bộ từ khoá": "29/06",
+    "30/06|Lên 1 bài / 1 ngày": "30/06",
+    "30/06|5 nhóm từ khoá chuyển đổi": "30/06",
+    "30/06|Lập trang vàng": "30/06",
+    "30/06|Lập DMCA": "30/06",
+    "30/06|Check & rep tin nhắn, comment khách": "30/06"
   },
   "ongoing_seen": {
     "24/06|Tạo tài khoản": 1,
-    "30/06|5 nhóm từ khoá chuyển đổi": 1,
-    "30/06|Lập trang vàng": 1,
-    "30/06|Lập DMCA": 1,
-    "30/06|Link đích cho từng nhóm từ khoá": 1
+    "30/06|Link đích cho từng nhóm từ khoá": 1,
+    "30/06|200 bài SEO cho 200 bộ từ khoá": 1,
+    "30/06|": 1
   },
   "ads-2026-25/06": {
     "hash": "a44e4f054013fcb481e2a3e6011fe360"
@@ -46,5 +50,11 @@
   },
   "ads-2026-29/06": {
     "hash": "01942644145e9293a884e1f1ef1e95e2"
+  },
+  "2026-30/06": {
+    "hash": "69cddf07cba5f779b648a53d99e6bd2d"
+  },
+  "ads-2026-30/06": {
+    "hash": "2e4fd7c371949ee9a007568b7278d6ec"
   }
 }
