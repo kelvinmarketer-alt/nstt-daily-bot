@@ -16,7 +16,10 @@
     "30/06|5 nhóm từ khoá chuyển đổi": "30/06",
     "30/06|Lập trang vàng": "30/06",
     "30/06|Lập DMCA": "30/06",
-    "30/06|Check & rep tin nhắn, comment khách": "30/06"
+    "30/06|Check & rep tin nhắn, comment khách": "30/06",
+    "01/07|1 ảnh bìa + 1 ảnh quy trình add KH vào nhóm": "01/07",
+    "01/07|Lên 1 bài / 1 ngày": "01/07",
+    "01/07|Check & rep tin nhắn, comment khách": "01/07"
   },
   "ongoing_seen": {
     "24/06|Tạo tài khoản": 1,
@@ -55,5 +58,11 @@
   },
   "ads-2026-30/06": {
     "hash": "2e4fd7c371949ee9a007568b7278d6ec"
+  },
+  "2026-01/07": {
+    "hash": "531e379093843df2ceade753571617ba"
+  },
+  "ads-2026-01/07": {
+    "hash": "61a6b46036bd49f32a885c7086a814c6"
   }
 }
