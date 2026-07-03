@@ -22,10 +22,10 @@
     "01/07|Check & rep tin nhắn, comment khách": "01/07",
     "02/07|1 ảnh thời tiết xấu gửi khách hàng": "02/07",
     "02/07|Check & rep tin nhắn, comment khách": "02/07",
-    "02/07|Lên 1 bài / 1 ngày": "02/07"
+    "02/07|Lên 1 bài / 1 ngày": "02/07",
+    "24/06|Tạo tài khoản": "02/07"
   },
   "ongoing_seen": {
-    "24/06|Tạo tài khoản": 1,
     "30/06|Link đích cho từng nhóm từ khoá": 1,
     "30/06|200 bài SEO cho 200 bộ từ khoá": 1
   },
@@ -69,7 +69,7 @@
     "hash": "61a6b46036bd49f32a885c7086a814c6"
   },
   "2026-02/07": {
-    "hash": "9224c591a05147087e3c015d62c5ec06"
+    "hash": "ead4662e3359fd836733dfeeaa6c5f16"
   },
   "ads-2026-02/07": {
     "hash": "68b1a81d645e4ebed6109e36c0ecfcbd"
