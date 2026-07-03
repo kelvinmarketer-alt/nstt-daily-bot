@@ -19,7 +19,10 @@
     "30/06|Check & rep tin nhắn, comment khách": "30/06",
     "01/07|1 ảnh bìa + 1 ảnh quy trình add KH vào nhóm": "01/07",
     "01/07|Lên 1 bài / 1 ngày": "01/07",
-    "01/07|Check & rep tin nhắn, comment khách": "01/07"
+    "01/07|Check & rep tin nhắn, comment khách": "01/07",
+    "02/07|1 ảnh thời tiết xấu gửi khách hàng": "02/07",
+    "02/07|Check & rep tin nhắn, comment khách": "02/07",
+    "02/07|Lên 1 bài / 1 ngày": "02/07"
   },
   "ongoing_seen": {
     "24/06|Tạo tài khoản": 1,
@@ -64,5 +67,11 @@
   },
   "ads-2026-01/07": {
     "hash": "61a6b46036bd49f32a885c7086a814c6"
+  },
+  "2026-02/07": {
+    "hash": "9224c591a05147087e3c015d62c5ec06"
+  },
+  "ads-2026-02/07": {
+    "hash": "68b1a81d645e4ebed6109e36c0ecfcbd"
   }
 }
