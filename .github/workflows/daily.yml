@@ -2,9 +2,10 @@ name: Báo cáo sáng (công việc + ads, số liệu hôm trước)
 
 on:
   schedule:
-    - cron: "0 2 * * *"    # 09:00 VN
-    - cron: "0 4 * * *"    # 11:00 VN — gửi lại nếu NV/ads cập nhật muộn
-    - cron: "0 7 * * *"    # 14:00 VN
+    # GitHub Actions chạy scheduled thường TRỄ ~2-4h nên đặt cron sớm hơn để bù.
+    - cron: "0 23 * * *"   # cron 06:00 VN -> thực tế ~09:00 VN (báo cáo chính)
+    - cron: "0 1 * * *"    # cron 08:00 VN -> ~11:00 VN — gửi lại nếu cập nhật muộn
+    - cron: "0 3 * * *"    # cron 10:00 VN -> ~13:00 VN — chốt cuối
   workflow_dispatch:
 
 permissions:
