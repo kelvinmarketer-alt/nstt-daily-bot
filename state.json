@@ -23,7 +23,8 @@
     "02/07|1 ảnh thời tiết xấu gửi khách hàng": "02/07",
     "02/07|Check & rep tin nhắn, comment khách": "02/07",
     "02/07|Lên 1 bài / 1 ngày": "02/07",
-    "24/06|Tạo tài khoản": "02/07"
+    "24/06|Tạo tài khoản": "02/07",
+    "06/07|Lên 1 bài / 1 ngày": "06/07"
   },
   "ongoing_seen": {
     "30/06|Link đích cho từng nhóm từ khoá": 1,
@@ -91,5 +92,11 @@
   },
   "ads-2026-05/07": {
     "hash": "0dd2adc589e031911a42a6cc4e8e809b"
+  },
+  "2026-06/07": {
+    "hash": "5d0127facd23a8c5d2fcdea89f8e3689"
+  },
+  "ads-2026-06/07": {
+    "hash": "c3e79c87143fe3097a777064a0295660"
   }
 }
