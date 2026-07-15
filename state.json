@@ -25,10 +25,12 @@
     "02/07|Lên 1 bài / 1 ngày": "02/07",
     "24/06|Tạo tài khoản": "02/07",
     "06/07|Lên 1 bài / 1 ngày": "06/07",
-    "13/07|6 bài viết đi báo": "13/07"
+    "13/07|6 bài viết đi báo": "13/07",
+    "14/07|Lên 1 bài / 1 ngày": "14/07",
+    "14/07|Lên 1 bài content Facebook": "14/07",
+    "14/07|Chỉnh sửa danh mục sản phẩm": "14/07"
   },
   "ongoing_seen": {
-    "30/06|Link đích cho từng nhóm từ khoá": 1,
     "30/06|200 bài SEO cho 200 bộ từ khoá": 1
   },
   "ads-2026-25/06": {
@@ -143,9 +145,9 @@
     "hash": "d91ae5d1c6a500121c1bc1cdc4426a6b"
   },
   "2026-14/07": {
-    "hash": "bc0642ffc11779a1ff97cc3cebc9b5f9"
+    "hash": "a5023dcf4c0a53ef3011b1d3cbae5a44"
   },
   "ads-2026-14/07": {
-    "hash": "a70d776ddcab5c3a4ae49e6cb60ff368"
+    "hash": "7edace01c42f68dbe4eea298c08685db"
   }
 }
