@@ -32,7 +32,10 @@
     "15/07|Camp 2 ads kho ship": "15/07",
     "15/07|Đi 2 bài viết 4 website": "15/07",
     "15/07|Lên 1 bài content Facebook": "15/07",
-    "15/07|Lên 1 bài / 1 ngày": "15/07"
+    "15/07|Lên 1 bài / 1 ngày": "15/07",
+    "16/07|Lên 1 bài content Facebook": "16/07",
+    "16/07|Lên 1 bài / 1 ngày": "16/07",
+    "16/07|Đi 2 bài viết 4 website": "16/07"
   },
   "ongoing_seen": {
     "30/06|200 bài SEO cho 200 bộ từ khoá": 1
@@ -159,5 +162,11 @@
   },
   "ads-2026-15/07": {
     "hash": "20f4d3e1117d31b267b525eb1e21bbdc"
+  },
+  "2026-16/07": {
+    "hash": "18b8b2d62dc543997978da7ba78f06df"
+  },
+  "ads-2026-16/07": {
+    "hash": "bde6d9ec5868f62a2e93c37172e96182"
   }
 }
