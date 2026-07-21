@@ -35,7 +35,10 @@
     "15/07|Lên 1 bài / 1 ngày": "15/07",
     "16/07|Lên 1 bài content Facebook": "16/07",
     "16/07|Lên 1 bài / 1 ngày": "16/07",
-    "16/07|Đi 2 bài viết 4 website": "16/07"
+    "16/07|Đi 2 bài viết 4 website": "16/07",
+    "20/07|Lên 1 bài / 1 ngày": "20/07",
+    "20/07|Đi 2 bài viết 4 website": "20/07",
+    "20/07|Lên 1 bài content Facebook": "20/07"
   },
   "ongoing_seen": {
     "30/06|200 bài SEO cho 200 bộ từ khoá": 1
@@ -170,9 +173,9 @@
     "hash": "bde6d9ec5868f62a2e93c37172e96182"
   },
   "2026-20/07": {
-    "hash": "ca52b51343df6909c0c4b6c081e3dfb9"
+    "hash": "b8ac27c0eb05aa6ffeffb5eadbd5aec1"
   },
   "ads-2026-20/07": {
-    "hash": "d4ff1546d3d1b467fb81cb34d53a861b"
+    "hash": "d016104db3fc6a33944fd4a06e42efdd"
   }
 }
