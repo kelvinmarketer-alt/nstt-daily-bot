@@ -48,7 +48,9 @@
     "24/07|Lên 1 bài / 1 ngày": "24/07",
     "24/07|Đi 2 bài viết 4 website": "24/07",
     "25/07|Lên 1 bài / 1 ngày": "25/07",
-    "25/07|Đi 2 bài viết 4 website": "25/07"
+    "25/07|Đi 2 bài viết 4 website": "25/07",
+    "28/07|Lên 1 bài / 1 ngày": "28/07",
+    "28/07|Đi 2 bài viết 5 website": "28/07"
   },
   "ongoing_seen": {
     "30/06|200 bài SEO cho 200 bộ từ khoá": 1,
@@ -232,9 +234,9 @@
     "hash": "128297d1cdebdb4e02506a119706d03b"
   },
   "2026-28/07": {
-    "hash": "d803a9cba77f0c90fd245dc47f2ae3d8"
+    "hash": "f738a00cbf8aa863e624aa4f762af40f"
   },
   "ads-2026-28/07": {
-    "hash": "7f2281dc72e84b4554701d57fe23ab2c"
+    "hash": "93700dd01decd8b139a73fd3564ddd7b"
   }
 }
