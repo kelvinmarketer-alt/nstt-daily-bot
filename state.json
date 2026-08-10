@@ -57,7 +57,10 @@
     "23/07|Sửa 700 phẩm thêm logo": "05/08",
     "05/08|Đặt nốt lịch bài FB": "05/08",
     "05/08|Lên 1 bài / 1 ngày": "05/08",
-    "05/08|Đi 2 bài viết 5 website": "05/08"
+    "05/08|Đi 2 bài viết 5 website": "05/08",
+    "10/08|Lên 1 bài / 1 ngày": "10/08",
+    "10/08|Đi 2 bài viết 5 website": "10/08",
+    "10/08|Làm báo cáo từ khoá": "10/08"
   },
   "ongoing_seen": {
     "30/06|200 bài SEO cho 200 bộ từ khoá": 1,
@@ -317,6 +320,12 @@
     "hash": "386b7e743d6ce3fe6839a165a67dd3d0"
   },
   "ads-2026-09/08": {
+    "hash": "f7c4f6a57d6dc56a5db028095c7d49b1"
+  },
+  "2026-10/08": {
+    "hash": "5275a3faef5924e772dccfe459a700e7"
+  },
+  "ads-2026-10/08": {
     "hash": "f7c4f6a57d6dc56a5db028095c7d49b1"
   }
 }
