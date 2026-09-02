@@ -26,7 +26,7 @@ jobs:
       - env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python report_bot.py daily
+        run: python report_bot.py ads
       - name: Lưu state
         run: |
           if [[ -n "$(git status --porcelain state.json)" ]]; then
