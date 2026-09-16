@@ -60,13 +60,10 @@
     "05/08|Đi 2 bài viết 5 website": "05/08",
     "10/08|Lên 1 bài / 1 ngày": "10/08",
     "10/08|Đi 2 bài viết 5 website": "10/08",
-    "10/08|Làm báo cáo từ khoá": "10/08"
+    "10/08|Làm báo cáo từ khoá": "10/08",
+    "15/09|Hoàn thành video TikTok #2": "15/09"
   },
-  "ongoing_seen": {
-    "30/06|200 bài SEO cho 200 bộ từ khoá": 1,
-    "08/08|Add 4 ảnh vào từng sản phẩm + chỉnh sửa các sp đẩy lên": 1,
-    "10/08|Thiết kế card visit cho sếp": 1
-  },
+  "ongoing_seen": {},
   "ads-2026-25/06": {
     "hash": "a44e4f054013fcb481e2a3e6011fe360"
   },
@@ -501,5 +498,8 @@
   },
   "ads-2026-15/09": {
     "hash": "7eeebdd7918eb01ca59726a5bda9f0fa"
+  },
+  "2026-15/09": {
+    "hash": "db9b154ac618932138a3cebe8e4cd6f3"
   }
 }
