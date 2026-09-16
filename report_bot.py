@@ -5,8 +5,8 @@ Bot báo cáo hàng ngày — Nông sản Tuấn Tú.
 Đọc Google Sheet (public, qua gviz CSV) -> dựng báo cáo -> gửi Telegram.
 
 Nguồn dữ liệu:
-  - Công việc:  sheet "Daily Report"
-  - Ads (SP + TD): sheet "Báo Cáo Ads"  (1 sheet, nhiều block)
+  - Công việc:  tab "Theo dõi công việc" trong file TASKS_SHEET_ID (Phòng Marketing)
+  - Ads (SP + TD): tab "Báo Cáo Ads" trong file ADS_SHEET_ID  (1 sheet, nhiều block)
 
 4 mục báo cáo:
   1. Công việc nhân viên trong ngày            (Daily Report)
@@ -25,15 +25,35 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone, timedelta, date
 
-SHEET_ID = os.environ.get(
-    "SHEET_ID", "1zkiqyJCV88gszPncZgNFhNQRDP6fvhAWaZ5Sgb479_I"
+# File Ads (SP + TD) — giữ nguyên sheet cũ
+ADS_SHEET_ID = os.environ.get(
+    "ADS_SHEET_ID", os.environ.get("SHEET_ID", "1zkiqyJCV88gszPncZgNFhNQRDP6fvhAWaZ5Sgb479_I")
+)
+# File Công việc — Phòng Marketing (file mới)
+TASKS_SHEET_ID = os.environ.get(
+    "TASKS_SHEET_ID", "1WWfrgDp2Q_6UofDBB7nQpO78kTmR3lO3FvueKy6JEM0"
 )
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 CHAT_ID = os.environ.get("CHAT_ID", "")
 
-SHEET_TASKS = "Daily Report"
+SHEET_TASKS = "Theo dõi công việc"
 SHEET_ADS = "Báo Cáo Ads"
 STATE_FILE = os.environ.get("STATE_FILE", "state.json")
+
+# Tên cột chấp nhận cho từng trường công việc (khớp không phân biệt hoa thường).
+TASK_FIELD_ALIASES = {
+    "ngay":     ["NGÀY", "Ngày (cập nhật / bị lỡ)", "Ngày cập nhật", "Ngày"],
+    "dv":       ["ĐẦU VIỆC", "Hạng mục / Công việc", "Hạng mục", "Công việc"],
+    "mt":       ["MỤC TIÊU SL", "Mục tiêu"],
+    "td":       ["THỰC ĐẠT SL", "Đã đạt"],
+    "unit":     ["ĐƠN VỊ", "Đơn vị"],
+    "tiendo":   ["% TIẾN ĐỘ", "% Hoàn thành"],
+    "kpi":      ["% ĐẠT KPI"],
+    "tt":       ["TRẠNG THÁI", "Trạng thái"],
+    "deadline": ["DEADLINE", "Deadline"],
+    "nguoi":    ["Người phụ trách", "NGƯỜI PHỤ TRÁCH", "Người"],
+    "donedate": ["Ngày hoàn thành thực tế", "NGÀY HOÀN THÀNH"],
+}
 
 # Vị trí cột (0-based) trong sheet "Báo Cáo Ads"
 # SP theo ngày
@@ -53,10 +73,10 @@ def now_vn():
     return datetime.now(VN_TZ)
 
 
-def fetch_grid(sheet_name):
+def fetch_grid(sheet_name, sheet_id):
     """Đọc toàn bộ 1 tab thành list[list[str]] (đã pad đều cột)."""
     url = (
-        f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq"
+        f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq"
         f"?tqx=out:csv&sheet={urllib.parse.quote(sheet_name)}"
     )
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -114,24 +134,31 @@ def _is_done(st):
     return "hoàn thành" in s or "tạm dừng" in s
 
 
-def _task_cols(grid):
-    """Map tên cột -> chỉ số, dùng chung cho mọi hàm xử lý công việc."""
-    header = grid[0] if grid else []
+def _task_header_row(grid):
+    """Tìm dòng header (chứa 'trạng thái' + 'deadline'); mặc định dòng 0.
+    (Sheet mới có dòng tiêu đề phía trên; gviz đôi khi gộp nên tự dò cho chắc.)"""
+    for i, row in enumerate(grid[:6]):
+        low = [(h or "").strip().lower() for h in row]
+        if any("trạng thái" in h for h in low) and any("deadline" in h for h in low):
+            return i
+    return 0
 
-    def idx(name):
-        for i, h in enumerate(header):
-            if h.strip().lower() == name.lower():
+
+def _task_cols(grid):
+    """Trả về (map trường->chỉ số cột, chỉ số dòng header). Khớp tên cột linh hoạt
+    (không phân biệt hoa thường) để dùng được cho cả sheet cũ lẫn sheet Marketing mới."""
+    hdr = _task_header_row(grid)
+    norm = [(h or "").strip().lower() for h in (grid[hdr] if hdr < len(grid) else [])]
+
+    def find(aliases):
+        al = [a.strip().lower() for a in aliases]
+        for i, h in enumerate(norm):
+            if h in al:
                 return i
         return -1
 
-    c = {k: idx(v) for k, v in {
-        "ngay": "NGÀY", "dv": "ĐẦU VIỆC", "mt": "MỤC TIÊU SL", "td": "THỰC ĐẠT SL",
-        "unit": "ĐƠN VỊ", "tiendo": "% TIẾN ĐỘ", "kpi": "% ĐẠT KPI",
-        "tt": "TRẠNG THÁI", "deadline": "DEADLINE",
-    }.items()}
-    if c["ngay"] < 0:        # cột A đôi khi bị đổi/xoá tiêu đề "NGÀY" -> ngày luôn nằm ở cột đầu
-        c["ngay"] = 0
-    return c
+    c = {k: find(v) for k, v in TASK_FIELD_ALIASES.items()}
+    return c, hdr
 
 
 def _row_complete(r, c):
@@ -153,18 +180,20 @@ def _fmt_task(r, c, show_deadline=False):
     st = col(r, c["tt"])
     icon = {"hoàn thành": "✅", "đang làm": "🟡", "trễ": "🔴",
             "chưa bắt đầu": "⚪", "tạm dừng": "⏸"}
-    if _row_complete(r, c):
-        ic = "✅"
-    else:
-        ic = next((v for k, v in icon.items() if k in st.lower()), "▫️")
+    ic = "✅" if _row_complete(r, c) else next((v for k, v in icon.items() if k in st.lower()), "▫️")
     sl = ""
     if col(r, c["mt"]) or col(r, c["td"]):
         sl = f" — {col(r, c['td']) or 0}/{col(r, c['mt']) or 0} {col(r, c['unit'])}".rstrip()
-    hạn = ""
+    meta = []
+    who = col(r, c.get("nguoi", -1))
+    if who:
+        meta.append(who)
+    meta.append(f"TĐ {col(r, c['tiendo']) or '—'}")
+    if c.get("kpi", -1) >= 0 and col(r, c["kpi"]):
+        meta.append(f"KPI {col(r, c['kpi'])}")
     if show_deadline and col(r, c["deadline"]):
-        hạn = f" · hạn {norm_date(col(r, c['deadline']))}"
-    return (f"{ic} <b>{col(r, c['dv'])}</b>{sl}  "
-            f"<i>(TĐ {col(r, c['tiendo']) or '—'} · KPI {col(r, c['kpi']) or '—'}{hạn})</i>")
+        meta.append(f"hạn {norm_date(col(r, c['deadline']))}")
+    return f"{ic} <b>{col(r, c['dv'])}</b>{sl}  <i>({' · '.join(meta)})</i>"
 
 
 # ---------------------------------------------------------------- 1. công việc
@@ -173,15 +202,15 @@ def section_tasks(day, grid=None):
     ✅ Hoàn thành hôm nay (việc nhập hôm nay đã xong), 🟡 Đang làm hôm nay,
     🔄 Đang làm tiếp (việc cũ chưa xong còn hạn), 🔴 Quá hạn chưa xong."""
     if grid is None:
-        grid = fetch_grid(SHEET_TASKS)
+        grid = fetch_grid(SHEET_TASKS, TASKS_SHEET_ID)
     if not grid:
         return ("• Không đọc được sheet.", 0)
-    c = _task_cols(grid)
+    c, hdr = _task_cols(grid)
     target_ddmm = f"{day.day:02d}/{day.month:02d}"
     target_date = day if isinstance(day, date) and not isinstance(day, datetime) else day.date()
 
     today_done, today_ongoing, ongoing, overdue = [], [], [], []
-    for r in grid[1:]:
+    for r in grid[hdr + 1:]:
         ng = norm_date(col(r, c["ngay"]))
         if not ng:
             continue
@@ -223,12 +252,12 @@ def _detect_newly_done(grid, state, now):
     báo 1 lần dưới nhóm ✅. Cập nhật state['ongoing_seen'] và state['done_reported']."""
     if not grid:
         return []
-    c = _task_cols(grid)
+    c, hdr = _task_cols(grid)
     today_ddmm = f"{now.day:02d}/{now.month:02d}"
     seen = state.get("ongoing_seen", {})          # việc bot đã thấy 'đang làm'
     done_rep = state.setdefault("done_reported", {})
     cur_ongoing, announce = {}, []
-    for r in grid[1:]:
+    for r in grid[hdr + 1:]:
         ng = norm_date(col(r, c["ngay"]))
         if not ng:
             continue
@@ -411,7 +440,7 @@ def process_work(anchor, remind_today):
     """`anchor` = ngày cần báo cáo (NGÀY HÔM TRƯỚC). Quét lùi WORK_LOOKBACK ngày từ anchor:
     ngày bị bỏ sót (đã nhắc) rồi NV nhập sau -> GỬI BÙ đúng ngày đó; ngày cũ chưa từng theo dõi -> bỏ qua.
     remind_today=True -> nếu ngày anchor trống thì nhắc 1 lần."""
-    grid = fetch_grid(SHEET_TASKS)
+    grid = fetch_grid(SHEET_TASKS, TASKS_SHEET_ID)
     state = load_state()
     newly_done = _detect_newly_done(grid, state, anchor)  # việc kéo dài vừa hoàn thành
     if newly_done:                                     # báo riêng 1 lần, không đụng dedup ngày
@@ -433,7 +462,7 @@ def process_ads(target):
     """Báo cáo ADS cho ngày `target` (datetime), chống gửi trùng + đánh dấu cập nhật.
     Gửi 9h sáng và chạy lại vài mốc; chỉ gửi lại khi số liệu đổi (chốt trễ / sửa)."""
     ddmm = f"{target.day:02d}/{target.month:02d}"
-    ads = fetch_grid(SHEET_ADS)
+    ads = fetch_grid(SHEET_ADS, ADS_SHEET_ID)
     body = "\n\n".join([
         section_ads_sp_day(ads, ddmm),
         section_ads_td_day(ads, ddmm),
