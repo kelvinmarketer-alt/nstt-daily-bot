@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+
+# Cloudflare Worker cron (deploy riêng bằng wrangler; chứa .trigger_key.txt bí mật)
+cron-trigger/
