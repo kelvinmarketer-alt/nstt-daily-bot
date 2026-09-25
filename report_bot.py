@@ -35,6 +35,7 @@ TASKS_SHEET_ID = os.environ.get(
 )
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 CHAT_ID = os.environ.get("CHAT_ID", "")
+META_TOKEN = os.environ.get("META_TOKEN", "")   # có token -> tự kéo ads ghi Sheet
 
 SHEET_TASKS = "Theo dõi công việc"
 SHEET_RECURRING = "Công việc định kỳ"
@@ -68,15 +69,8 @@ TASK_FIELD_ALIASES = {
     "donedate": ["Ngày hoàn thành thực tế", "NGÀY HOÀN THÀNH"],
 }
 
-# Vị trí cột (0-based) trong sheet "Báo Cáo Ads"
-# SP theo ngày
-SP_NGAY, SP_CHI, SP_SDT, SP_DTHU = 2, 3, 4, 7
-# SP theo tháng (block K:S)
-M_THANG, M_CHI, M_DTHU, M_SDT, M_SLKH, M_TYLE, M_CPDTHU = 10, 11, 12, 13, 15, 17, 18
-# TD theo ngày (block U:AB)
-TD_NGAY, TD_CHI, TD_LEAD, TD_CV = 22, 23, 24, 26
-# TD theo tháng (bảng thứ 2, dùng chung cột K:N): Tổng chi, CV, $/CV
-TDM_CHI, TDM_CV, TDM_CPCV = 11, 12, 13
+# Cột sheet "Báo Cáo Ads" được DÒ THEO TÊN HEADER lúc chạy (xem _ads_cols) —
+# vì layout hay bị chèn/dịch cột.
 
 VN_TZ = timezone(timedelta(hours=7))
 
@@ -337,7 +331,52 @@ def _detect_newly_done(grid, state, now):
     return announce
 
 
-# ---------------------------------------------------------------- 2 & 3 & 4 (ads)
+# ---------------------------------------------------------------- 2 & 3 & 4 & 5 (ads)
+def _ads_cols(grid):
+    """Dò cột "Báo Cáo Ads" theo TÊN HEADER (chống chèn/dịch cột)."""
+    hdr = 0
+    for i, r in enumerate(grid[:8]):
+        if any((x or "").strip() == "Chi tiêu ngày" for x in r):
+            hdr = i
+            break
+    h = grid[hdr]
+
+    def idx(name):
+        for i, x in enumerate(h):
+            if (x or "").strip() == name:
+                return i
+        return -1
+
+    ngay = [i for i, x in enumerate(h) if (x or "").strip() in ("Ngày", "Ngày ")]
+    sdt = [i for i, x in enumerate(h) if (x or "").strip() == "SDT"]
+    slkh = [i for i, x in enumerate(h) if (x or "").strip() == "SLKH"]
+    m_chi = idx("Tổng chi")
+    c = {
+        "hdr": hdr,
+        "sp_ngay": min(ngay) if ngay else 2, "sp_chi": idx("Chi tiêu ngày"),
+        "sp_sdt": (min(sdt) if sdt else -1), "sp_dthu": idx("Doanh thu"),
+        "m_thang": (m_chi - 1 if m_chi > 0 else 10), "m_chi": m_chi,
+        "m_dthu": idx("Tổng doanh thu"),
+        "m_sdt": next((i for i in sdt if i > m_chi), -1),
+        "m_slkh": next((i for i in slkh if i > m_chi), -1),
+        "m_tyle": idx("Tỉ lệ chốt"), "m_cpdthu": idx("$/Dthu"),
+        "td_ngay": max(ngay) if ngay else 25, "td_chi": idx("Chi Tiêu"),
+        "td_lead": idx("Lead"), "td_cv": idx("CV"),
+        # TD theo tháng: bảng riêng phía dưới, dò từ chính dòng header của nó
+        "tdm_thang": m_chi - 1 if m_chi > 0 else 10, "tdm_chi": m_chi,
+        "tdm_cv": 14, "tdm_cpcv": 15,
+    }
+    for r in grid:
+        nm = {(x or "").strip(): i for i, x in enumerate(r)}
+        if "Tổng chi" in nm and "CV" in nm and "$/CV" in nm:
+            c["tdm_thang"] = nm.get("Tháng", c["tdm_thang"])
+            c["tdm_chi"] = nm["Tổng chi"]
+            c["tdm_cv"] = nm["CV"]
+            c["tdm_cpcv"] = nm["$/CV"]
+            break
+    return c
+
+
 def find_daily(grid, col_ngay, today_ddmm):
     """Trả về dòng đầu tiên có Ngày == hôm nay trong block ads."""
     for r in grid[2:]:
@@ -346,13 +385,13 @@ def find_daily(grid, col_ngay, today_ddmm):
     return None
 
 
-def section_ads_sp_day(grid, today_ddmm):
-    r = find_daily(grid, SP_NGAY, today_ddmm)
+def section_ads_sp_day(grid, ac, today_ddmm):
+    r = find_daily(grid, ac["sp_ngay"], today_ddmm)
     out = ["<b>2️⃣ ADS SẢN PHẨM — TRONG NGÀY</b>"]
     if r is None:
         out.append("• Chưa có dữ liệu nhập cho hôm nay.")
         return "\n".join(out)
-    chi, sdt, dthu = to_int(col(r, SP_CHI)), to_int(col(r, SP_SDT)), to_int(col(r, SP_DTHU))
+    chi, sdt, dthu = to_int(col(r, ac["sp_chi"])), to_int(col(r, ac["sp_sdt"])), to_int(col(r, ac["sp_dthu"]))
     out.append(f"• Chi tiêu: <b>{vnd(chi)}</b>")
     out.append(f"• Doanh thu: <b>{vnd(dthu)}</b>")
     out.append(f"• Chi tiêu/Doanh thu: <b>{pct(chi, dthu)}</b>")
@@ -361,40 +400,40 @@ def section_ads_sp_day(grid, today_ddmm):
     return "\n".join(out)
 
 
-def section_ads_td_day(grid, today_ddmm):
-    r = find_daily(grid, TD_NGAY, today_ddmm)
+def section_ads_td_day(grid, ac, today_ddmm):
+    r = find_daily(grid, ac["td_ngay"], today_ddmm)
     out = ["<b>3️⃣ ADS TUYỂN DỤNG — TRONG NGÀY</b>"]
     if r is None:
         out.append("• Chưa có dữ liệu nhập cho hôm nay.")
         return "\n".join(out)
-    chi, lead, cv = to_int(col(r, TD_CHI)), to_int(col(r, TD_LEAD)), to_int(col(r, TD_CV))
+    chi, lead, cv = to_int(col(r, ac["td_chi"])), to_int(col(r, ac["td_lead"])), to_int(col(r, ac["td_cv"]))
     out.append(f"• Chi tiêu: <b>{vnd(chi)}</b>")
-    out.append(f"• Lead: <b>{lead}</b>")
+    out.append(f"• Lead (tin nhắn): <b>{lead}</b>")
     out.append(f"• Chi phí/Lead: <b>{per(chi, lead)}</b>")
     out.append(f"• CV: <b>{cv}</b>")
     out.append(f"• Chi phí/CV: <b>{per(chi, cv)}</b>")
     return "\n".join(out)
 
 
-def _month_rows(grid, month):
-    """Các dòng có cột Tháng == month & có Tổng chi. Thứ tự: [0]=bảng SP, [1]=bảng TD."""
-    return [r for r in grid
-            if col(r, M_THANG).strip() == str(month) and col(r, M_CHI).strip()]
+def _month_row(grid, thang_col, chi_col, month):
+    for r in grid:
+        if col(r, thang_col).strip() == str(month) and col(r, chi_col).strip():
+            return r
+    return None
 
 
-def section_ads_sp_month(grid, month):
-    """Bảng SP theo tháng (bảng đầu, cột K:S)."""
+def section_ads_sp_month(grid, ac, month):
+    """Bảng SP theo tháng."""
     out = [f"<b>4️⃣ ADS SẢN PHẨM — THÁNG {month}</b>"]
-    rows = _month_rows(grid, month)
-    if not rows:
+    target = _month_row(grid, ac["m_thang"], ac["m_chi"], month)
+    if target is None:
         out.append("• Chưa có dữ liệu tháng này.")
         return "\n".join(out)
-    target = rows[0]
-    chi = to_int(col(target, M_CHI))
-    dthu = to_int(col(target, M_DTHU))
-    slkh = to_int(col(target, M_SLKH))
-    tyle = col(target, M_TYLE) or pct(slkh, to_int(col(target, M_SDT)))
-    cpdthu = col(target, M_CPDTHU) or pct(chi, dthu)
+    chi = to_int(col(target, ac["m_chi"]))
+    dthu = to_int(col(target, ac["m_dthu"]))
+    slkh = to_int(col(target, ac["m_slkh"]))
+    tyle = col(target, ac["m_tyle"]) or pct(slkh, to_int(col(target, ac["m_sdt"])))
+    cpdthu = col(target, ac["m_cpdthu"]) or pct(chi, dthu)
     out.append(f"• Chi tiêu: <b>{vnd(chi)}</b>")
     out.append(f"• Doanh thu: <b>{vnd(dthu)}</b>")
     out.append(f"• Chi phí/Doanh thu: <b>{cpdthu}</b>")
@@ -404,17 +443,19 @@ def section_ads_sp_month(grid, month):
     return "\n".join(out)
 
 
-def section_ads_td_month(grid, month):
-    """Bảng TD theo tháng (bảng thứ 2, cột K:N)."""
+def section_ads_td_month(grid, ac, month):
+    """Bảng TD theo tháng (bảng riêng phía dưới)."""
     out = [f"<b>5️⃣ ADS TUYỂN DỤNG — THÁNG {month}</b>"]
-    rows = _month_rows(grid, month)
-    if len(rows) < 2:
+    # bảng TD nằm dưới bảng SP -> lấy dòng tháng khớp mà KHÔNG phải bảng SP
+    rows = [r for r in grid
+            if col(r, ac["tdm_thang"]).strip() == str(month) and col(r, ac["tdm_chi"]).strip()]
+    target = rows[-1] if rows else None      # bảng TD ở dưới -> lấy dòng cuối
+    if target is None or len(rows) < 2:
         out.append("• Chưa có dữ liệu tháng này.")
         return "\n".join(out)
-    target = rows[1]
-    chi = to_int(col(target, TDM_CHI))
-    cv = to_int(col(target, TDM_CV))
-    cpcv = col(target, TDM_CPCV) or per(chi, cv)
+    chi = to_int(col(target, ac["tdm_chi"]))
+    cv = to_int(col(target, ac["tdm_cv"]))
+    cpcv = col(target, ac["tdm_cpcv"]) or per(chi, cv)
     out.append(f"• Chi tiêu: <b>{vnd(chi)}</b>")
     out.append(f"• CV nhận: <b>{cv}</b>")
     out.append(f"• Chi phí/CV: <b>{cpcv}</b>")
@@ -531,11 +572,12 @@ def process_ads(target):
     Gửi 9h sáng và chạy lại vài mốc; chỉ gửi lại khi số liệu đổi (chốt trễ / sửa)."""
     ddmm = f"{target.day:02d}/{target.month:02d}"
     ads = fetch_grid(SHEET_ADS, ADS_SHEET_ID)
+    ac = _ads_cols(ads)
     body = "\n\n".join([
-        section_ads_sp_day(ads, ddmm),
-        section_ads_td_day(ads, ddmm),
-        section_ads_sp_month(ads, target.month),
-        section_ads_td_month(ads, target.month),
+        section_ads_sp_day(ads, ac, ddmm),
+        section_ads_td_day(ads, ac, ddmm),
+        section_ads_sp_month(ads, ac, target.month),
+        section_ads_td_month(ads, ac, target.month),
     ])
     state = load_state()
     key = f"ads-{target.year}-{ddmm}"
@@ -564,6 +606,12 @@ def main():
     if mode in ("daily", "work"):      # báo cáo công việc của ngày hôm trước
         process_work(yesterday, remind_today=True)
     if mode in ("daily", "ads"):       # báo cáo ads của ngày hôm trước
+        if META_TOKEN:                 # tự kéo chi tiêu + tin nhắn từ Meta -> ghi Sheet
+            try:
+                import ads_updater
+                ads_updater.run(target=yesterday)
+            except Exception as e:
+                print("[ads_updater] bỏ qua (lỗi):", e, file=sys.stderr)
         process_ads(yesterday)
     if mode not in ("daily", "work", "ads"):
         sys.exit(f"Mode không hợp lệ: {mode} (daily / work / ads)")
