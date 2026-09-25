@@ -73,7 +73,9 @@
     "22/09|Thiết kế ảnh bìa Facebook mới": "22/09",
     "23/09|Thiết kế ảnh bìa Facebook mới": "23/09"
   },
-  "ongoing_seen": {},
+  "ongoing_seen": {
+    "24/09|Nghiên cứu tool và xoá metadata của 63/138 ảnh chatgpt tạo": 1
+  },
   "ads-2026-25/06": {
     "hash": "a44e4f054013fcb481e2a3e6011fe360"
   },
@@ -563,9 +565,10 @@
     "hash": "7eeebdd7918eb01ca59726a5bda9f0fa"
   },
   "2026-24/09": {
-    "reminded": true
+    "reminded": true,
+    "hash": "77755d3fcd2ffa499a2ea64f4e927066"
   },
   "ads-2026-24/09": {
-    "hash": "7eeebdd7918eb01ca59726a5bda9f0fa"
+    "hash": "99837b9dbc8b92952e81d6bfe6f8e76c"
   }
 }
