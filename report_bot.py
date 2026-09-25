@@ -567,27 +567,38 @@ def process_work(anchor, remind_today):
     save_state(state)
 
 
-def process_ads(target):
-    """Báo cáo ADS cho ngày `target` (datetime), chống gửi trùng + đánh dấu cập nhật.
-    Gửi 9h sáng và chạy lại vài mốc; chỉ gửi lại khi số liệu đổi (chốt trễ / sửa)."""
+def _work_body(day, grid, rec_grid):
+    """(body, count) phần CÔNG VIỆC (đầu việc + việc định kỳ) cho 1 ngày."""
+    tbody, tcount = section_tasks(day, grid)
+    rbody, rcount = section_recurring(day, rec_grid)
+    parts = [b for b, n in [(tbody, tcount), (rbody, rcount)] if n > 0]
+    return ("\n\n".join(parts), tcount + rcount)
+
+
+def _ads_body(target):
+    """Chuỗi 4 mục CHI PHÍ ADS (SP/TD ngày + SP/TD tháng) cho 1 ngày."""
     ddmm = f"{target.day:02d}/{target.month:02d}"
     ads = fetch_grid(SHEET_ADS, ADS_SHEET_ID)
     ac = _ads_cols(ads)
-    body = "\n\n".join([
+    return "\n\n".join([
         section_ads_sp_day(ads, ac, ddmm),
         section_ads_td_day(ads, ac, ddmm),
         section_ads_sp_month(ads, ac, target.month),
         section_ads_td_month(ads, ac, target.month),
     ])
+
+
+def process_ads(target):
+    """Báo cáo ADS lẻ (mode 'ads') cho ngày `target` — chống gửi trùng."""
+    ddmm = f"{target.day:02d}/{target.month:02d}"
+    body = _ads_body(target)
     state = load_state()
     key = f"ads-{target.year}-{ddmm}"
     entry = state.get(key, {})
-
     h = hashlib.md5(body.encode("utf-8")).hexdigest()
     if entry.get("hash") == h:
         print(f"[{key}] Nội dung không đổi -> bỏ qua")
         return
-
     tag = " (🔄 CẬP NHẬT)" if "hash" in entry else ""
     header = (
         f"📊 <b>BÁO CÁO ADS{tag} — NÔNG SẢN TUẤN TÚ</b>\n"
@@ -599,21 +610,80 @@ def process_ads(target):
     save_state(state)
 
 
+def process_daily(anchor, remind_today=True):
+    """TIN GỘP: công việc + việc định kỳ + 🎉 việc vừa xong + chi phí ads —
+    tất cả số liệu NGÀY HÔM TRƯỚC, chỉ MỘT tin Telegram.
+    Vẫn GỬI BÙ (tin riêng) cho ngày cũ bị bỏ sót rồi nhân viên nhập muộn."""
+    grid = fetch_grid(SHEET_TASKS, TASKS_SHEET_ID)
+    rec_grid = fetch_grid(SHEET_RECURRING, TASKS_SHEET_ID)
+    state = load_state()
+
+    # việc kéo dài vừa chuyển sang hoàn thành -> chèn vào tin gộp của ngày anchor
+    newly_done = _detect_newly_done(grid, state, anchor)
+
+    # GỬI BÙ các ngày CŨ bị bỏ sót (chỉ công việc, tin riêng — hiếm khi xảy ra)
+    for offset in range(WORK_LOOKBACK, 0, -1):
+        day = anchor - timedelta(days=offset)
+        _send_work_day(day, grid, rec_grid, state, is_today=False, remind_today=False)
+
+    # ---- TIN GỘP cho ngày anchor
+    ddmm = f"{anchor.day:02d}/{anchor.month:02d}"
+    work_body, wcount = _work_body(anchor, grid, rec_grid)
+    blocks = []
+    if work_body:
+        blocks.append("🧑‍💻 <b>CÔNG VIỆC</b>\n" + work_body)
+    elif remind_today:
+        blocks.append("🧑‍💻 <b>CÔNG VIỆC</b>\n⚠️ Chưa có nhân viên nhập công việc.")
+    if newly_done:
+        c, _ = _task_cols(grid)
+        blocks.append(
+            "🎉 <b>VIỆC VỪA HOÀN THÀNH</b> (kéo dài nhiều ngày)\n" +
+            "\n".join(_fmt_task(r, c, show_deadline=True) for r in newly_done)
+        )
+    blocks.append("📊 <b>CHI PHÍ ADS</b>\n" + _ads_body(anchor))
+    body = "\n\n".join(blocks)
+
+    key = f"daily-{anchor.year}-{ddmm}"
+    entry = state.get(key, {})
+    h = hashlib.md5(body.encode("utf-8")).hexdigest()
+    if entry.get("hash") == h:
+        print(f"[{key}] không đổi -> bỏ qua")
+    else:
+        tag = " (🔄 CẬP NHẬT)" if "hash" in entry else ""
+        header = (
+            f"📋 <b>BÁO CÁO HÀNG NGÀY{tag} — NÔNG SẢN TUẤN TÚ</b>\n"
+            f"🗓 Số liệu ngày {anchor.strftime('%d/%m/%Y')}\n{'─' * 22}"
+        )
+        send_telegram(header + "\n\n" + body)
+        entry["hash"] = h
+        state[key] = entry
+    save_state(state)
+
+
+def _run_ads_updater(target):
+    """Tự kéo chi tiêu + tin nhắn từ Meta rồi ghi vào Sheet (nếu có META_TOKEN)."""
+    if not META_TOKEN:
+        return
+    try:
+        import ads_updater
+        ads_updater.run(target=target)
+    except Exception as e:
+        print("[ads_updater] bỏ qua (lỗi):", e, file=sys.stderr)
+
+
 def main():
-    # TẤT CẢ báo cáo đều là số liệu NGÀY HÔM TRƯỚC, gửi buổi sáng (9h + chạy lại 11h/14h).
+    # TẤT CẢ báo cáo đều là số liệu NGÀY HÔM TRƯỚC, gửi buổi sáng.
     mode = sys.argv[1] if len(sys.argv) > 1 else "daily"
     yesterday = now_vn() - timedelta(days=1)
-    if mode in ("daily", "work"):      # báo cáo công việc của ngày hôm trước
+    if mode == "daily":                # 1 TIN GỘP: công việc + ads
+        _run_ads_updater(yesterday)    # kéo ads về Sheet trước khi báo
+        process_daily(yesterday, remind_today=True)
+    elif mode == "work":               # chạy lẻ phần công việc
         process_work(yesterday, remind_today=True)
-    if mode in ("daily", "ads"):       # báo cáo ads của ngày hôm trước
-        if META_TOKEN:                 # tự kéo chi tiêu + tin nhắn từ Meta -> ghi Sheet
-            try:
-                import ads_updater
-                ads_updater.run(target=yesterday)
-            except Exception as e:
-                print("[ads_updater] bỏ qua (lỗi):", e, file=sys.stderr)
+    elif mode == "ads":                # chạy lẻ phần ads
+        _run_ads_updater(yesterday)
         process_ads(yesterday)
-    if mode not in ("daily", "work", "ads"):
+    else:
         sys.exit(f"Mode không hợp lệ: {mode} (daily / work / ads)")
 
 
