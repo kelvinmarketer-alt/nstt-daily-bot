@@ -71,7 +71,9 @@
     "21/09|Hoàn thành video TikTok #5": "21/09",
     "21/09|Thiết kế lại bảng báo giá nông sản T9": "21/09",
     "22/09|Thiết kế ảnh bìa Facebook mới": "22/09",
-    "23/09|Thiết kế ảnh bìa Facebook mới": "23/09"
+    "23/09|Thiết kế ảnh bìa Facebook mới": "23/09",
+    "25/09|Hoàn thành video TikTok #6, hook mới, text mới, edit mới": "25/09",
+    "25/09|Nghiên cứu tool và xoá metadata của 138/138 ảnh chatgpt tạo": "25/09"
   },
   "ongoing_seen": {
     "24/09|Nghiên cứu tool và xoá metadata của 63/138 ảnh chatgpt tạo": 1
@@ -573,5 +575,8 @@
   },
   "daily-2026-24/09": {
     "hash": "ca51d92e4f58b0dbf12127dc93e1e87d"
+  },
+  "daily-2026-25/09": {
+    "hash": "31a570af86c0f1b654fa2cc3eb7837f7"
   }
 }
