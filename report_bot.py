@@ -37,8 +37,21 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 CHAT_ID = os.environ.get("CHAT_ID", "")
 
 SHEET_TASKS = "Theo dõi công việc"
+SHEET_RECURRING = "Công việc định kỳ"
 SHEET_ADS = "Báo Cáo Ads"
 STATE_FILE = os.environ.get("STATE_FILE", "state.json")
+
+# Cột tab "Công việc định kỳ"
+REC_FIELD_ALIASES = {
+    "name":   ["Việc định kỳ", "Công việc định kỳ"],
+    "nguoi":  ["Người phụ trách", "Người"],
+    "freq":   ["Tần suất"],
+    "tu":     ["Từ ngày"],
+    "den":    ["Đến ngày (deadline)", "Đến ngày"],
+    "missed": ["Các ngày đã lỡ (tháng này)", "Các ngày đã lỡ"],
+    "nmiss":  ["Số lần lỡ (tháng này)", "Số lần lỡ"],
+    "note":   ["Ghi chú / Mô tả", "Ghi chú"],
+}
 
 # Tên cột chấp nhận cho từng trường công việc (khớp không phân biệt hoa thường).
 TASK_FIELD_ALIASES = {
@@ -247,6 +260,57 @@ def section_tasks(day, grid=None):
     return ("\n\n".join(parts) + "\n\n" + summary, total)
 
 
+def section_recurring(day, rec_grid=None):
+    """Việc ĐỊNH KỲ áp dụng cho ngày `day` (tab 'Công việc định kỳ'). Trả về (body, count).
+    Theo mô hình sheet 'chỉ ghi khi lỡ': ngày nằm trong 'Các ngày đã lỡ' -> 🔴 LỠ, còn lại -> ✅."""
+    if rec_grid is None:
+        rec_grid = fetch_grid(SHEET_RECURRING, TASKS_SHEET_ID)
+    if not rec_grid:
+        return ("", 0)
+    hdr = 0
+    for i, row in enumerate(rec_grid[:6]):
+        low = [(h or "").strip().lower() for h in row]
+        if any("việc định kỳ" in h for h in low) and any("tần suất" in h for h in low):
+            hdr = i
+            break
+    norm = [(h or "").strip().lower() for h in (rec_grid[hdr] if hdr < len(rec_grid) else [])]
+
+    def find(aliases):
+        al = [a.strip().lower() for a in aliases]
+        for i, h in enumerate(norm):
+            if h in al:
+                return i
+        return -1
+
+    c = {k: find(v) for k, v in REC_FIELD_ALIASES.items()}
+    d = day if isinstance(day, date) and not isinstance(day, datetime) else day.date()
+    cands = {f"{d.day:02d}/{d.month:02d}", f"{d.day}/{d.month}",
+             f"{d.day:02d}/{d.month:02d}/{d.year}", f"{d.day}/{d.month}/{d.year}"}
+    lines = []
+    for r in rec_grid[hdr + 1:]:
+        name = col(r, c["name"]).strip()
+        if not name:
+            continue
+        tu, den = parse_date(col(r, c["tu"]), d.year), parse_date(col(r, c["den"]), d.year)
+        if (tu and d < tu) or (den and d > den):
+            continue                       # ngoài khoảng áp dụng
+        freq = col(r, c["freq"]).strip()
+        who = col(r, c["nguoi"]).strip()
+        meta = " · ".join(x for x in [who, freq] if x)
+        if "ngày" in freq.lower():          # việc HÀNG NGÀY -> có trạng thái làm/lỡ theo ngày
+            missed = any(t in col(r, c["missed"]) for t in cands)
+            ic = "🔴" if missed else "✅"
+            extra = " · 🔴 LỠ" if missed else ""
+        else:                               # tuần/tháng -> chỉ nhắc + số lần lỡ trong tháng
+            ic = "🔁"
+            n = to_int(col(r, c["nmiss"]))
+            extra = f" · lỡ {n} lần/tháng" if n else ""
+        lines.append(f"{ic} <b>{name}</b> — <i>{meta}</i>{extra}")
+    if not lines:
+        return ("", 0)
+    return ("🔁 <b>VIỆC ĐỊNH KỲ HÀNG NGÀY</b>\n" + "\n".join(lines), len(lines))
+
+
 def _detect_newly_done(grid, state, now):
     """Phát hiện việc KÉO DÀI vừa chuyển sang hoàn thành (so với lần chạy trước) để
     báo 1 lần dưới nhóm ✅. Cập nhật state['ongoing_seen'] và state['done_reported']."""
@@ -391,13 +455,16 @@ def save_state(state):
 WORK_LOOKBACK = 4   # số ngày quét lùi để gửi bù các ngày bị bỏ sót
 
 
-def _send_work_day(day, grid, state, is_today, remind_today):
-    """Xử lý 1 ngày trong vùng quét."""
+def _send_work_day(day, grid, rec_grid, state, is_today, remind_today):
+    """Xử lý 1 ngày trong vùng quét (việc theo dõi + việc định kỳ)."""
     ddmm = f"{day.day:02d}/{day.month:02d}"
     key = f"{day.year}-{ddmm}"
     entry = state.get(key, {})
     seen = key in state               # bot đã từng theo dõi ngày này chưa
-    body, count = section_tasks(day, grid)
+    tbody, tcount = section_tasks(day, grid)
+    rbody, rcount = section_recurring(day, rec_grid)
+    body = "\n\n".join(b for b, n in [(tbody, tcount), (rbody, rcount)] if n > 0)
+    count = tcount + rcount
 
     if count == 0:
         # Chỉ nhắc cho đúng HÔM NAY buổi tối; không nhắc ngày cũ.
@@ -441,10 +508,11 @@ def process_work(anchor, remind_today):
     ngày bị bỏ sót (đã nhắc) rồi NV nhập sau -> GỬI BÙ đúng ngày đó; ngày cũ chưa từng theo dõi -> bỏ qua.
     remind_today=True -> nếu ngày anchor trống thì nhắc 1 lần."""
     grid = fetch_grid(SHEET_TASKS, TASKS_SHEET_ID)
+    rec_grid = fetch_grid(SHEET_RECURRING, TASKS_SHEET_ID)   # tab việc định kỳ (1 lần)
     state = load_state()
     newly_done = _detect_newly_done(grid, state, anchor)  # việc kéo dài vừa hoàn thành
     if newly_done:                                     # báo riêng 1 lần, không đụng dedup ngày
-        c = _task_cols(grid)
+        c, _ = _task_cols(grid)
         lines = "\n".join(_fmt_task(r, c, show_deadline=True) for r in newly_done)
         send_telegram(
             f"🎉 <b>VIỆC VỪA HOÀN THÀNH</b> (việc kéo dài nhiều ngày)\n{'─' * 22}\n{lines}"
@@ -454,7 +522,7 @@ def process_work(anchor, remind_today):
         is_anchor = (offset == 0)
         # nếu ngày anchor vừa có việc kéo dài hoàn thành thì không nhắc 'trống' nữa
         rt = remind_today and not (is_anchor and newly_done)
-        _send_work_day(day, grid, state, is_anchor, rt)
+        _send_work_day(day, grid, rec_grid, state, is_anchor, rt)
     save_state(state)
 
 
