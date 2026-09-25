@@ -1,4 +1,4 @@
-name: Báo cáo sáng (1 tin gộp: công việc + ads, số liệu hôm trước)
+name: "Báo cáo sáng (1 tin gộp: công việc + ads, số liệu hôm trước)"
 
 on:
   schedule:
