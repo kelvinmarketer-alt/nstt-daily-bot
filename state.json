@@ -73,7 +73,9 @@
     "22/09|Thiết kế ảnh bìa Facebook mới": "22/09",
     "23/09|Thiết kế ảnh bìa Facebook mới": "23/09",
     "25/09|Hoàn thành video TikTok #6, hook mới, text mới, edit mới": "25/09",
-    "25/09|Nghiên cứu tool và xoá metadata của 138/138 ảnh chatgpt tạo": "25/09"
+    "25/09|Nghiên cứu tool và xoá metadata của 138/138 ảnh chatgpt tạo": "25/09",
+    "26/09|Hoàn thành video TikTok #6, 7, hook mới, text mới, edit mới": "26/09",
+    "26/09|Sửa kịch bản, tìm source mới và lên vid ads": "26/09"
   },
   "ongoing_seen": {
     "24/09|Nghiên cứu tool và xoá metadata của 63/138 ảnh chatgpt tạo": 1
@@ -578,5 +580,8 @@
   },
   "daily-2026-25/09": {
     "hash": "6833acc15a221b80a6dfe4be0a1f11aa"
+  },
+  "daily-2026-26/09": {
+    "hash": "8dbd2f96b3ff2347439db80dbbb200a1"
   }
 }
