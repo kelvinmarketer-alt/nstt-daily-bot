@@ -75,7 +75,9 @@
     "25/09|Hoàn thành video TikTok #6, hook mới, text mới, edit mới": "25/09",
     "25/09|Nghiên cứu tool và xoá metadata của 138/138 ảnh chatgpt tạo": "25/09",
     "26/09|Hoàn thành video TikTok #6, 7, hook mới, text mới, edit mới": "26/09",
-    "26/09|Sửa kịch bản, tìm source mới và lên vid ads": "26/09"
+    "26/09|Sửa kịch bản, tìm source mới và lên vid ads": "26/09",
+    "28/09|Hoàn thành video TikTok #7, hook mới, text mới, edit mới": "28/09",
+    "28/09|Sửa kịch bản, tìm source mới và lên vid ads": "28/09"
   },
   "ongoing_seen": {
     "24/09|Nghiên cứu tool và xoá metadata của 63/138 ảnh chatgpt tạo": 1
@@ -586,5 +588,8 @@
   },
   "daily-2026-27/09": {
     "hash": "005be525cdf99ab65d1f69e2e6bd7243"
+  },
+  "daily-2026-28/09": {
+    "hash": "0713637a57317d1278df4858d293b25b"
   }
 }
