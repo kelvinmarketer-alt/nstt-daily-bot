@@ -78,10 +78,10 @@
     "26/09|Sửa kịch bản, tìm source mới và lên vid ads": "26/09",
     "28/09|Hoàn thành video TikTok #7, hook mới, text mới, edit mới": "28/09",
     "28/09|Sửa kịch bản, tìm source mới và lên vid ads": "28/09",
-    "28/09|Đăng vid reels lên kênh youtube": "28/09"
+    "28/09|Đăng vid reels lên kênh youtube": "28/09",
+    "24/09|Nghiên cứu tool và xoá metadata của 63/138 ảnh chatgpt tạo": "28/09"
   },
   "ongoing_seen": {
-    "24/09|Nghiên cứu tool và xoá metadata của 63/138 ảnh chatgpt tạo": 1,
     "28/09|Thêm các entity cho website": 1
   },
   "ads-2026-25/06": {
@@ -592,6 +592,6 @@
     "hash": "005be525cdf99ab65d1f69e2e6bd7243"
   },
   "daily-2026-28/09": {
-    "hash": "4b87dc57af66a7875ba597a8a5a360f2"
+    "hash": "0d47e3eb5a49aede26957fe813e945ed"
   }
 }
