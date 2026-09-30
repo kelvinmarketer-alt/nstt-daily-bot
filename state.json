@@ -601,6 +601,16 @@
     "hash": "217ea644f3a5c234dc3e46c95af2b160"
   },
   "daily-2026-29/09": {
-    "hash": "9cd3b44aeb1d7a0b09970282fb0ea835"
+    "hash": "2e88902ef6f12e8c45cfdd3fe08c66fb"
+  },
+  "pk_seen_fb": [],
+  "pk_seen_fb_day": "2026-09-28",
+  "pk_seen_zalo": [],
+  "pk_seen_zalo_day": "2026-09-28",
+  "pk_daily": {
+    "2026-09-29": {
+      "fb": 0,
+      "zalo": 0
+    }
   }
 }
