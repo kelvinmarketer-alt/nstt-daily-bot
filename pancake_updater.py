@@ -70,14 +70,18 @@ def _collect_phones(tok, since, until):
         seg_end = min(seg_start + _CHUNK, until)
         pn = 1
         while pn <= 400:  # chặn vô hạn
-            try:
-                r = requests.get(f"{BASE}/{pid}/conversations", params={
-                    "page_access_token": tok, "since": seg_start, "until": seg_end,
-                    "page_number": pn,
-                }, timeout=60)
-                js = r.json()
-            except Exception as e:
-                print(f"[pancake] lỗi tải trang {pn}: {e}")
+            js = None
+            for attempt in range(3):  # retry chống timeout lẻ
+                try:
+                    r = requests.get(f"{BASE}/{pid}/conversations", params={
+                        "page_access_token": tok, "since": seg_start, "until": seg_end,
+                        "page_number": pn,
+                    }, timeout=90)
+                    js = r.json()
+                    break
+                except Exception as e:
+                    print(f"[pancake] trang {pn} lỗi (lần {attempt + 1}): {e}")
+            if js is None:
                 break
             convs = js.get("conversations", [])
             if not convs:
@@ -143,8 +147,12 @@ def _norm_ddmm(s):
     return (s or "").strip()
 
 
-def _write_sdt(day, val):
-    """Ghi SĐT mới (FB) vào cột 'SDT' khối SP, đúng dòng ngày."""
+ZALO_COL = 9          # cột J (nằm giữa khối SP và khối tháng, an toàn không đụng công thức)
+ZALO_HEADER = "SĐT Zalo"
+
+
+def _write_row(day, fb_new, zalo_new):
+    """Ghi SĐT mới FB -> cột 'SDT' (khối SP) và SĐT Zalo -> cột 'SĐT Zalo' (J), đúng dòng ngày."""
     gc = _gclient()
     ws = gc.open_by_key(ADS_SHEET_ID).worksheet(SHEET_ADS)
     vals = ws.get_all_values()
@@ -156,9 +164,12 @@ def _write_sdt(day, val):
     h = vals[hdr]
     col_ngay = next((i for i, x in enumerate(h) if (x or "").strip() in ("Ngày", "Ngày ")), 2)
     col_sdt = next((i for i, x in enumerate(h) if (x or "").strip() == "SDT"), -1)
-    if col_sdt < 0:
-        print("[pancake] không thấy cột SDT, bỏ ghi")
-        return
+    col_zalo = next((i for i, x in enumerate(h) if (x or "").strip() == ZALO_HEADER), -1)
+    updates = []
+    if col_zalo < 0:  # chưa có cột Zalo -> tạo header ở cột J
+        col_zalo = ZALO_COL
+        updates.append({"range": gspread.utils.rowcol_to_a1(hdr + 1, col_zalo + 1),
+                        "values": [[ZALO_HEADER]]})
     ddmm = f"{day.day}/{day.month}"
     row = None
     for i, r in enumerate(vals):
@@ -166,10 +177,15 @@ def _write_sdt(day, val):
             row = i
             break
     if row is None:
-        print(f"[pancake] chưa có dòng ngày {ddmm} trong SP -> bỏ ghi SDT")
+        print(f"[pancake] chưa có dòng ngày {ddmm} -> bỏ ghi")
         return
-    ws.update_cell(row + 1, col_sdt + 1, val)
-    print(f"[pancake] ghi SDT dòng {row + 1} ({ddmm}) = {val}")
+    if col_sdt >= 0:
+        updates.append({"range": gspread.utils.rowcol_to_a1(row + 1, col_sdt + 1),
+                        "values": [[fb_new]]})
+    updates.append({"range": gspread.utils.rowcol_to_a1(row + 1, col_zalo + 1),
+                    "values": [[zalo_new]]})
+    ws.batch_update(updates, value_input_option="USER_ENTERED")
+    print(f"[pancake] ghi dòng {row + 1} ({ddmm}): SDT(FB)={fb_new} | Zalo={zalo_new}")
 
 
 def run(target, state, write=True):
@@ -184,11 +200,11 @@ def run(target, state, write=True):
     fb_new = _count_new(state, "pk_seen_fb", FB_TOKEN, target)
     zalo_new = _count_new(state, "pk_seen_zalo", ZALO_TOKEN, target)
     print(f"[pancake {target.strftime('%d/%m')}] SĐT mới: FB={fb_new} | Zalo={zalo_new}")
-    if write and FB_TOKEN:
+    if write:
         try:
-            _write_sdt(target, fb_new)
+            _write_row(target, fb_new, zalo_new)
         except Exception as e:
-            print("[pancake] lỗi ghi SDT:", e)
+            print("[pancake] lỗi ghi sheet:", e)
     key = f"{target.year}-{target.month:02d}-{target.day:02d}"
     state.setdefault("pk_daily", {})[key] = {"fb": fb_new, "zalo": zalo_new}
     return {"fb": fb_new, "zalo": zalo_new}
