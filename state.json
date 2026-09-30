@@ -81,10 +81,14 @@
     "28/09|Đăng vid reels lên kênh youtube": "28/09",
     "24/09|Nghiên cứu tool và xoá metadata của 63/138 ảnh chatgpt tạo": "28/09",
     "29/09|Hoàn thành video TikTok #8, hook mới, text mới, edit mới": "29/09",
-    "29/09|Hoàn thành video TikTok #9, hook mới, text mới, edit mới": "29/09"
+    "29/09|Hoàn thành video TikTok #9, hook mới, text mới, edit mới": "29/09",
+    "29/09|Đăng vid reels lên kênh youtube": "29/09",
+    "29/09|chạy quảng cáo trên faceboook": "29/09"
   },
   "ongoing_seen": {
-    "28/09|Thêm các entity cho website": 1
+    "28/09|Thêm các entity cho website": 1,
+    "29/09|Thêm các entity cho website": 1,
+    "29/09|thêm sản phẩm trên gg site": 1
   },
   "ads-2026-25/06": {
     "hash": "a44e4f054013fcb481e2a3e6011fe360"
@@ -597,6 +601,6 @@
     "hash": "217ea644f3a5c234dc3e46c95af2b160"
   },
   "daily-2026-29/09": {
-    "hash": "c5e889e51af239766b15f97bf4216e01"
+    "hash": "9cd3b44aeb1d7a0b09970282fb0ea835"
   }
 }
