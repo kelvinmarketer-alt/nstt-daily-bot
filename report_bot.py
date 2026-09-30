@@ -355,6 +355,7 @@ def _ads_cols(grid):
         "hdr": hdr,
         "sp_ngay": min(ngay) if ngay else 2, "sp_chi": idx("Chi tiêu ngày"),
         "sp_sdt": (min(sdt) if sdt else -1), "sp_dthu": idx("Doanh thu"),
+        "sp_zalo": idx("SĐT Zalo"),
         "m_thang": (m_chi - 1 if m_chi > 0 else 10), "m_chi": m_chi,
         "m_dthu": idx("Tổng doanh thu"),
         "m_sdt": next((i for i in sdt if i > m_chi), -1),
@@ -692,6 +693,88 @@ def _run_pancake_updater(target, state):
         return None
 
 
+def _dayset(start, end):
+    """Tập chuỗi 'dd/mm' trong khoảng [start, end]."""
+    s, d = set(), start
+    while d <= end:
+        s.add(f"{d.day:02d}/{d.month:02d}")
+        d += timedelta(days=1)
+    return s
+
+
+def section_period_ads(grid, ac, dayset):
+    """Tổng hợp ADS (SP + TD + SĐT + Zalo) cộng dồn các ngày trong `dayset`."""
+    sp_chi = sp_sdt = sp_zalo = sp_dthu = 0
+    td_chi = td_lead = td_cv = 0
+    for r in grid[2:]:
+        if norm_date(col(r, ac["sp_ngay"])) in dayset:
+            sp_chi += to_int(col(r, ac["sp_chi"]))
+            sp_sdt += to_int(col(r, ac["sp_sdt"]))
+            if ac.get("sp_zalo", -1) >= 0:
+                sp_zalo += to_int(col(r, ac["sp_zalo"]))
+            sp_dthu += to_int(col(r, ac["sp_dthu"]))
+        if norm_date(col(r, ac["td_ngay"])) in dayset:
+            td_chi += to_int(col(r, ac["td_chi"]))
+            td_lead += to_int(col(r, ac["td_lead"]))
+            td_cv += to_int(col(r, ac["td_cv"]))
+    sp = [
+        "🛒 <b>SẢN PHẨM</b>",
+        f"• Chi tiêu: <b>{vnd(sp_chi)}</b>",
+        f"• SĐT (ads): <b>{sp_sdt}</b> · Chi phí/SĐT: <b>{per(sp_chi, sp_sdt)}</b>",
+        f"• SĐT Zalo (tự nhiên): <b>{sp_zalo}</b>",
+        f"• Doanh thu: <b>{vnd(sp_dthu)}</b>",
+    ]
+    td = [
+        "🧑‍💼 <b>TUYỂN DỤNG</b>",
+        f"• Chi tiêu: <b>{vnd(td_chi)}</b>",
+        f"• Lead (tin nhắn): <b>{td_lead}</b> · Chi phí/Lead: <b>{per(td_chi, td_lead)}</b>",
+        f"• CV: <b>{td_cv}</b> · Chi phí/CV: <b>{per(td_chi, td_cv)}</b>",
+    ]
+    return "\n".join(sp) + "\n\n" + "\n".join(td)
+
+
+def _send_period(state_key, header, dayset):
+    ads = fetch_grid(SHEET_ADS, ADS_SHEET_ID)
+    ac = _ads_cols(ads)
+    body = header + "\n\n" + section_period_ads(ads, ac, dayset)
+    state = load_state()
+    entry = state.get(state_key, {})
+    h = hashlib.md5(body.encode("utf-8")).hexdigest()
+    if entry.get("hash") == h:
+        print(f"[{state_key}] không đổi -> bỏ qua")
+        return
+    send_telegram(body)
+    entry["hash"] = h
+    state[state_key] = entry
+    save_state(state)
+
+
+def process_weekly(now=None):
+    """Báo cáo TUẦN TRƯỚC (T2–CN). Chạy đầu tuần này."""
+    today = (now or now_vn()).date()
+    monday = today - timedelta(days=today.weekday())     # T2 tuần này
+    start = monday - timedelta(days=7)                    # T2 tuần trước
+    end = monday - timedelta(days=1)                      # CN tuần trước
+    iso = start.isocalendar()
+    header = (
+        f"📅 <b>BÁO CÁO TUẦN — NÔNG SẢN TUẤN TÚ</b>\n"
+        f"🗓 Tuần {start.strftime('%d/%m')} – {end.strftime('%d/%m/%Y')}\n{'─' * 22}"
+    )
+    _send_period(f"weekly-{iso[0]}-W{iso[1]:02d}", header, _dayset(start, end))
+
+
+def process_monthly(now=None):
+    """Báo cáo THÁNG TRƯỚC. Chạy ngày 1 tháng này."""
+    first = (now or now_vn()).date().replace(day=1)
+    end = first - timedelta(days=1)                       # ngày cuối tháng trước
+    start = end.replace(day=1)                            # ngày 1 tháng trước
+    header = (
+        f"📆 <b>BÁO CÁO THÁNG {end.month}/{end.year} — NÔNG SẢN TUẤN TÚ</b>\n"
+        f"🗓 {start.strftime('%d/%m')} – {end.strftime('%d/%m/%Y')}\n{'─' * 22}"
+    )
+    _send_period(f"monthly-{end.year}-{end.month:02d}", header, _dayset(start, end))
+
+
 def main():
     # TẤT CẢ báo cáo đều là số liệu NGÀY HÔM TRƯỚC, gửi buổi sáng.
     mode = sys.argv[1] if len(sys.argv) > 1 else "daily"
@@ -704,8 +787,12 @@ def main():
     elif mode == "ads":                # chạy lẻ phần ads
         _run_ads_updater(yesterday)
         process_ads(yesterday)
+    elif mode == "weekly":             # tổng hợp tuần trước (chạy đầu tuần)
+        process_weekly()
+    elif mode == "monthly":            # tổng hợp tháng trước (chạy đầu tháng)
+        process_monthly()
     else:
-        sys.exit(f"Mode không hợp lệ: {mode} (daily / work / ads)")
+        sys.exit(f"Mode không hợp lệ: {mode} (daily / work / ads / weekly / monthly)")
 
 
 if __name__ == "__main__":
