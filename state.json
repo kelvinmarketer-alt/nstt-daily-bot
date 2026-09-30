@@ -1041,7 +1041,7 @@
     "ff94cdb12a3a6002",
     "ffaa9ccec8dd9ef1"
   ],
-  "pk_seen_fb_day": "2026-09-28",
+  "pk_seen_fb_day": "2026-09-29",
   "pk_seen_zalo": [
     "0569b9cc1e22b4d0",
     "0604a7a0d7bda00b",
@@ -1106,14 +1106,21 @@
     "f8d6bb1acd729fcd",
     "fb6f61646b256703"
   ],
-  "pk_seen_zalo_day": "2026-09-28",
+  "pk_seen_zalo_day": "2026-09-29",
   "pk_daily": {
     "2026-09-29": {
       "fb": 0,
+      "zalo": 0
+    },
+    "2026-09-30": {
+      "fb": 1,
       "zalo": 0
     }
   },
   "weekly-2026-W39": {
     "hash": "e4aaaf51f8fa0fcc6391321ee30fd9ad"
+  },
+  "daily-2026-30/09": {
+    "hash": "73bca0b5e4516e86475cba59516121f0"
   }
 }
