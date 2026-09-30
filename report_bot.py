@@ -621,6 +621,9 @@ def process_daily(anchor, remind_today=True):
     # việc kéo dài vừa chuyển sang hoàn thành -> chèn vào tin gộp của ngày anchor
     newly_done = _detect_newly_done(grid, state, anchor)
 
+    # Pancake: ghi SĐT mới (FB) vào cột SDT của SP + đếm SĐT Zalo (nguồn tự nhiên).
+    pk = _run_pancake_updater(anchor, state)
+
     # GỬI BÙ các ngày CŨ bị bỏ sót (chỉ công việc, tin riêng — hiếm khi xảy ra)
     for offset in range(WORK_LOOKBACK, 0, -1):
         day = anchor - timedelta(days=offset)
@@ -641,6 +644,11 @@ def process_daily(anchor, remind_today=True):
             "\n".join(_fmt_task(r, c, show_deadline=True) for r in newly_done)
         )
     blocks.append("📊 <b>CHI PHÍ ADS</b>\n" + _ads_body(anchor))
+    if pk is not None:
+        blocks.append(
+            "🌱 <b>NGUỒN SỐ TỰ NHIÊN (Zalo)</b>\n"
+            f"• SĐT mới trong ngày: <b>{pk.get('zalo', 0)}</b>"
+        )
     body = "\n\n".join(blocks)
 
     key = f"daily-{anchor.year}-{ddmm}"
@@ -669,6 +677,19 @@ def _run_ads_updater(target):
         ads_updater.run(target=target)
     except Exception as e:
         print("[ads_updater] bỏ qua (lỗi):", e, file=sys.stderr)
+
+
+def _run_pancake_updater(target, state):
+    """Kéo SĐT mới từ Pancake (FB -> cột SDT của SP; Zalo -> nguồn tự nhiên).
+    Trả về {'fb':n,'zalo':n} hoặc None nếu chưa cấu hình token / lỗi."""
+    if not (os.environ.get("PANCAKE_FB_TOKEN") or os.environ.get("PANCAKE_ZALO_TOKEN")):
+        return None
+    try:
+        import pancake_updater
+        return pancake_updater.run(target, state)
+    except Exception as e:
+        print("[pancake] bỏ qua (lỗi):", e, file=sys.stderr)
+        return None
 
 
 def main():

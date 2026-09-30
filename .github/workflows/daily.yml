@@ -32,6 +32,8 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           META_TOKEN: ${{ secrets.META_TOKEN }}
           GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
+          PANCAKE_FB_TOKEN: ${{ secrets.PANCAKE_FB_TOKEN }}
+          PANCAKE_ZALO_TOKEN: ${{ secrets.PANCAKE_ZALO_TOKEN }}
         run: python report_bot.py daily
       - name: Lưu state
         run: |
