@@ -58,31 +58,38 @@ def _day_bounds(day):
     return int(s.timestamp()), int(e.timestamp())
 
 
+_CHUNK = 25 * 86400  # API pages.fm trả rỗng nếu khoảng since/until quá rộng (>~1 tháng) -> chia nhỏ
+
+
 def _collect_phones(tok, since, until):
-    """Tập SĐT (đã chuẩn hoá) xuất hiện trong khoảng [since, until]."""
+    """Tập SĐT (đã chuẩn hoá) xuất hiện trong [since, until]. Chia cửa sổ ≤25 ngày."""
     pid = _page_id(tok)
     phones = set()
-    pn = 1
-    while pn <= 400:  # chặn vô hạn
-        try:
-            r = requests.get(f"{BASE}/{pid}/conversations", params={
-                "page_access_token": tok, "since": since, "until": until,
-                "page_number": pn,
-            }, timeout=60)
-            js = r.json()
-        except Exception as e:
-            print(f"[pancake] lỗi tải trang {pn}: {e}")
-            break
-        convs = js.get("conversations", [])
-        if not convs:
-            break
-        for c in convs:
-            if c.get("has_phone") or c.get("recent_phone_numbers"):
-                for ph in (c.get("recent_phone_numbers") or []):
-                    num = _norm_phone(ph.get("phone_number") or ph.get("captured"))
-                    if len(num) >= 9:
-                        phones.add(num)
-        pn += 1
+    seg_start = since
+    while seg_start <= until:
+        seg_end = min(seg_start + _CHUNK, until)
+        pn = 1
+        while pn <= 400:  # chặn vô hạn
+            try:
+                r = requests.get(f"{BASE}/{pid}/conversations", params={
+                    "page_access_token": tok, "since": seg_start, "until": seg_end,
+                    "page_number": pn,
+                }, timeout=60)
+                js = r.json()
+            except Exception as e:
+                print(f"[pancake] lỗi tải trang {pn}: {e}")
+                break
+            convs = js.get("conversations", [])
+            if not convs:
+                break
+            for c in convs:
+                if c.get("has_phone") or c.get("recent_phone_numbers"):
+                    for ph in (c.get("recent_phone_numbers") or []):
+                        num = _norm_phone(ph.get("phone_number") or ph.get("captured"))
+                        if len(num) >= 9:
+                            phones.add(num)
+            pn += 1
+        seg_start = seg_end + 1
     return phones
 
 
