@@ -85,7 +85,9 @@
     "29/09|Đăng vid reels lên kênh youtube": "29/09",
     "29/09|chạy quảng cáo trên faceboook": "29/09",
     "30/09|Hoàn thành video TikTok #10, hook mới, text mới, edit mới": "30/09",
-    "30/09|Hoàn thành video TikTok #11, hook mới, text mới, edit mới": "30/09"
+    "30/09|Hoàn thành video TikTok #11, hook mới, text mới, edit mới": "30/09",
+    "01/10|Update logo, thông tin mới, format lại định dạng": "01/10",
+    "01/10|Hoàn thành video đăng các nền tảng khác nhau": "01/10"
   },
   "ongoing_seen": {
     "28/09|Thêm các entity cho website": 1,
@@ -833,6 +835,7 @@
     "8836d9c727b02226",
     "8887286b018f05b7",
     "896483e136068870",
+    "896d029c84a1a79d",
     "89f48764b6b03319",
     "89facd2737f91fe0",
     "8a1e356734cd7911",
@@ -1044,7 +1047,7 @@
     "ff94cdb12a3a6002",
     "ffaa9ccec8dd9ef1"
   ],
-  "pk_seen_fb_day": "2026-09-29",
+  "pk_seen_fb_day": "2026-09-30",
   "pk_seen_zalo": [
     "0569b9cc1e22b4d0",
     "0604a7a0d7bda00b",
@@ -1109,7 +1112,7 @@
     "f8d6bb1acd729fcd",
     "fb6f61646b256703"
   ],
-  "pk_seen_zalo_day": "2026-09-29",
+  "pk_seen_zalo_day": "2026-09-30",
   "pk_daily": {
     "2026-09-29": {
       "fb": 0,
@@ -1117,6 +1120,10 @@
     },
     "2026-09-30": {
       "fb": 1,
+      "zalo": 0
+    },
+    "2026-10-01": {
+      "fb": 2,
       "zalo": 0
     }
   },
@@ -1128,5 +1135,8 @@
   },
   "monthly-2026-09": {
     "hash": "430dfd9c211ead5c0081b8dd2b2e0d0c"
+  },
+  "daily-2026-01/10": {
+    "hash": "ec70e82cc9d1862b1986a6c69b925151"
   }
 }
