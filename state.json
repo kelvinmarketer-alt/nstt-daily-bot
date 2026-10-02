@@ -90,7 +90,8 @@
     "01/10|Hoàn thành video đăng các nền tảng khác nhau": "01/10",
     "01/10|Thêm các entity cho website": "01/10",
     "01/10|Đăng vid reels lên kênh youtube": "01/10",
-    "01/10|thêm hình ảnh vào các sản phẩm chưa có hình ảnh trên app, webstie": "01/10"
+    "01/10|thêm hình ảnh vào các sản phẩm chưa có hình ảnh trên app, webstie": "01/10",
+    "02/10|Hoàn thành video đăng các nền tảng khác nhau": "02/10"
   },
   "ongoing_seen": {
     "28/09|Thêm các entity cho website": 1,
@@ -629,6 +630,7 @@
     "0637a0a082820025",
     "063da9a80ba48ed5",
     "06dec8646a078118",
+    "06f71a491a2b6b7f",
     "0886cbf93b43fe8a",
     "0973364c0ab7314c",
     "0a92dc8b82f91955",
@@ -813,6 +815,7 @@
     "79ded983657bdf44",
     "7adc2c82bb372038",
     "7bb0e3d3f6dacddd",
+    "7bd27eb0a354b5e8",
     "7bfe720353e3b529",
     "7d614fd8ebf593d6",
     "7d7a74c4dc2e967f",
@@ -1050,7 +1053,7 @@
     "ff94cdb12a3a6002",
     "ffaa9ccec8dd9ef1"
   ],
-  "pk_seen_fb_day": "2026-09-30",
+  "pk_seen_fb_day": "2026-10-01",
   "pk_seen_zalo": [
     "0569b9cc1e22b4d0",
     "0604a7a0d7bda00b",
@@ -1115,7 +1118,7 @@
     "f8d6bb1acd729fcd",
     "fb6f61646b256703"
   ],
-  "pk_seen_zalo_day": "2026-09-30",
+  "pk_seen_zalo_day": "2026-10-01",
   "pk_daily": {
     "2026-09-29": {
       "fb": 0,
@@ -1128,6 +1131,10 @@
     "2026-10-01": {
       "fb": 2,
       "zalo": 0
+    },
+    "2026-10-02": {
+      "fb": 0,
+      "zalo": 1
     }
   },
   "weekly-2026-W39": {
@@ -1141,5 +1148,8 @@
   },
   "daily-2026-01/10": {
     "hash": "61850f62fa5ccd732ce5c4c67e59c37a"
+  },
+  "daily-2026-02/10": {
+    "hash": "82c498564646949da1d6e93927dfe93d"
   }
 }
