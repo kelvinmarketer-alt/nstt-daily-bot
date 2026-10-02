@@ -87,7 +87,10 @@
     "30/09|Hoàn thành video TikTok #10, hook mới, text mới, edit mới": "30/09",
     "30/09|Hoàn thành video TikTok #11, hook mới, text mới, edit mới": "30/09",
     "01/10|Update logo, thông tin mới, format lại định dạng": "01/10",
-    "01/10|Hoàn thành video đăng các nền tảng khác nhau": "01/10"
+    "01/10|Hoàn thành video đăng các nền tảng khác nhau": "01/10",
+    "01/10|Thêm các entity cho website": "01/10",
+    "01/10|Đăng vid reels lên kênh youtube": "01/10",
+    "01/10|thêm hình ảnh vào các sản phẩm chưa có hình ảnh trên app, webstie": "01/10"
   },
   "ongoing_seen": {
     "28/09|Thêm các entity cho website": 1,
@@ -1137,6 +1140,6 @@
     "hash": "430dfd9c211ead5c0081b8dd2b2e0d0c"
   },
   "daily-2026-01/10": {
-    "hash": "db2e1467afb2212fcf42075ea6445389"
+    "hash": "59203906de2d9e0d479ff28ddb624947"
   }
 }
