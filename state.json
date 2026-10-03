@@ -91,7 +91,9 @@
     "01/10|Thêm các entity cho website": "01/10",
     "01/10|Đăng vid reels lên kênh youtube": "01/10",
     "01/10|thêm hình ảnh vào các sản phẩm chưa có hình ảnh trên app, webstie": "01/10",
-    "02/10|Hoàn thành video đăng các nền tảng khác nhau": "02/10"
+    "02/10|Hoàn thành video đăng các nền tảng khác nhau": "02/10",
+    "03/10|Hoàn thành video đăng các nền tảng khác nhau": "03/10",
+    "03/10|Tạo kênh tiktok văn phòng": "03/10"
   },
   "ongoing_seen": {
     "28/09|Thêm các entity cho website": 1,
@@ -1053,8 +1055,9 @@
     "ff94cdb12a3a6002",
     "ffaa9ccec8dd9ef1"
   ],
-  "pk_seen_fb_day": "2026-10-01",
+  "pk_seen_fb_day": "2026-10-02",
   "pk_seen_zalo": [
+    "00a61df8631cb406",
     "0569b9cc1e22b4d0",
     "0604a7a0d7bda00b",
     "0898ae767d91e8c0",
@@ -1118,7 +1121,7 @@
     "f8d6bb1acd729fcd",
     "fb6f61646b256703"
   ],
-  "pk_seen_zalo_day": "2026-10-01",
+  "pk_seen_zalo_day": "2026-10-02",
   "pk_daily": {
     "2026-09-29": {
       "fb": 0,
@@ -1134,6 +1137,10 @@
     },
     "2026-10-02": {
       "fb": 0,
+      "zalo": 1
+    },
+    "2026-10-03": {
+      "fb": 1,
       "zalo": 1
     }
   },
@@ -1151,5 +1158,8 @@
   },
   "daily-2026-02/10": {
     "hash": "e25b5b5e6092bc974c3f37c0321a1363"
+  },
+  "daily-2026-03/10": {
+    "hash": "b1afa2ddd26506d340c45376fea54ce6"
   }
 }
