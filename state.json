@@ -95,7 +95,10 @@
     "03/10|Hoàn thành video đăng các nền tảng khác nhau": "03/10",
     "03/10|Tạo kênh tiktok văn phòng": "03/10",
     "05/10|Làm video hướng dẫn trên PC": "05/10",
-    "05/10|Hoàn thành video đăng các nền tảng khác nhau": "05/10"
+    "05/10|Hoàn thành video đăng các nền tảng khác nhau": "05/10",
+    "06/10|Làm video hướng dẫn trên điện thoại": "06/10",
+    "06/10|Hoàn thành video đăng các nền tảng khác nhau": "06/10",
+    "06/10|Thiết kế ảnh rau loại 1, loại 2": "06/10"
   },
   "ongoing_seen": {
     "28/09|Thêm các entity cho website": 1,
@@ -721,6 +724,7 @@
     "3c4b4c7af346690f",
     "3c5caf45f10b173b",
     "3c83a6ece5301511",
+    "3c98af5ee0f66568",
     "3ca891c363bab402",
     "3ca9ffc75dba01a8",
     "3d3d8c5199b81888",
@@ -977,6 +981,7 @@
     "d246138419fc2c69",
     "d2e2bfd2d969e28e",
     "d3333ea8887266ec",
+    "d393770468a1de08",
     "d4645c95e7b680f9",
     "d4f2caf34707395a",
     "d4f91198ae9f7f15",
@@ -1039,6 +1044,7 @@
     "f1aaa40ad90b8914",
     "f23b0ec54381d989",
     "f58125940aa68bcf",
+    "f68d631e004c002d",
     "f78061510d16b115",
     "f7b0758efa1ead62",
     "f94afde4646c46b6",
@@ -1058,7 +1064,7 @@
     "ff94cdb12a3a6002",
     "ffaa9ccec8dd9ef1"
   ],
-  "pk_seen_fb_day": "2026-10-04",
+  "pk_seen_fb_day": "2026-10-05",
   "pk_seen_zalo": [
     "00a61df8631cb406",
     "0569b9cc1e22b4d0",
@@ -1125,7 +1131,7 @@
     "f8d6bb1acd729fcd",
     "fb6f61646b256703"
   ],
-  "pk_seen_zalo_day": "2026-10-04",
+  "pk_seen_zalo_day": "2026-10-05",
   "pk_daily": {
     "2026-09-29": {
       "fb": 0,
@@ -1153,6 +1159,10 @@
     },
     "2026-10-05": {
       "fb": 2,
+      "zalo": 0
+    },
+    "2026-10-06": {
+      "fb": 4,
       "zalo": 0
     }
   },
@@ -1182,5 +1192,8 @@
   },
   "daily-2026-05/10": {
     "hash": "f32329851a2a6a68e999f2493cdb9ccd"
+  },
+  "daily-2026-06/10": {
+    "hash": "07f1ee4777951d3e8a7b82c0b3192f45"
   }
 }
