@@ -93,7 +93,9 @@
     "01/10|thêm hình ảnh vào các sản phẩm chưa có hình ảnh trên app, webstie": "01/10",
     "02/10|Hoàn thành video đăng các nền tảng khác nhau": "02/10",
     "03/10|Hoàn thành video đăng các nền tảng khác nhau": "03/10",
-    "03/10|Tạo kênh tiktok văn phòng": "03/10"
+    "03/10|Tạo kênh tiktok văn phòng": "03/10",
+    "05/10|Làm video hướng dẫn trên PC": "05/10",
+    "05/10|Hoàn thành video đăng các nền tảng khác nhau": "05/10"
   },
   "ongoing_seen": {
     "28/09|Thêm các entity cho website": 1,
@@ -1179,6 +1181,6 @@
     "hash": "602359ae13b572c01e56214e3fffed90"
   },
   "daily-2026-05/10": {
-    "hash": "c4031c45549d14ed56493468c6de7a0b"
+    "hash": "8cc016e40391ec2a0d7f03879dfd09b5"
   }
 }
