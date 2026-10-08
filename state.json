@@ -98,7 +98,11 @@
     "05/10|Hoàn thành video đăng các nền tảng khác nhau": "05/10",
     "06/10|Làm video hướng dẫn trên điện thoại": "06/10",
     "06/10|Hoàn thành video đăng các nền tảng khác nhau": "06/10",
-    "06/10|Thiết kế ảnh rau loại 1, loại 2": "06/10"
+    "06/10|Thiết kế ảnh rau loại 1, loại 2": "06/10",
+    "07/10|Hoàn thành video đăng các nền tảng khác nhau": "07/10",
+    "07/10|Thiết kế ảnh bìa cho facebook thu mua": "07/10",
+    "07/10|Làm video hướng dẫn trên PC, Mobile cho cả đặt và duyệt đơn": "07/10",
+    "07/10|thêm hình ảnh sản phẩm vào website": "07/10"
   },
   "ongoing_seen": {
     "28/09|Thêm các entity cho website": 1,
@@ -1205,6 +1209,6 @@
     "hash": "be0c0cec6f94789c27f1c3208bb8ed20"
   },
   "daily-2026-07/10": {
-    "hash": "b6ebcf7bcddc1cc2b29430cfbf1b3cd6"
+    "hash": "817bfe20d2b31616f13c7ce583b763e6"
   }
 }
