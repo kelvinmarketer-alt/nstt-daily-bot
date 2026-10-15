@@ -26,5 +26,6 @@ jobs:
           PANCAKE_FB_TOKEN: ${{ secrets.PANCAKE_FB_TOKEN }}
           PANCAKE_ZALO_TOKEN: ${{ secrets.PANCAKE_ZALO_TOKEN }}
           FROM: ${{ inputs.from }}
+          DIAG: "1"
           TO: ${{ inputs.to }}
         run: python pancake_updater.py --date "$FROM" --to "$TO" --no-write

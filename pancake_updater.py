@@ -311,6 +311,26 @@ if __name__ == "__main__":
         ssl._create_default_https_context = ssl._create_unverified_context
     tgt = (datetime.strptime(a.date, "%d/%m/%Y").replace(tzinfo=VN_TZ)
            if a.date else datetime.now(VN_TZ) - timedelta(days=1))
+    if a.to and os.environ.get("DIAG"):  # đối chiếu sâu: chỉ in SỐ ĐẾM theo loại hội thoại, không in SĐT
+        s, u = _day_bounds(tgt)[0], _day_bounds(datetime.strptime(a.to, "%d/%m/%Y").replace(tzinfo=VN_TZ))[1]
+        for name, tok in (("FB", FB_TOKEN), ("Zalo", ZALO_TOKEN)):
+            st, last = {}, None
+            for _ in range(300):
+                convs = ((_api(tok, 2, {"last_conversation_id": last} if last else {}) or {})
+                         .get("conversations") or []) if tok else []
+                for c in convs:
+                    if s <= _ts(c.get("updated_at")) <= u:
+                        for k in (f"type={c.get('type')}", f"tạo trong kỳ={s <= _ts(c.get('inserted_at'))}",
+                                  f"gửi cuối={'page' if (c.get('last_sent_by') or {}).get('id') == c.get('page_id') else 'khách'}",
+                                  f"customers={len(c.get('customers') or [])}"):
+                            x = st.setdefault(k, [0, set()])
+                            x[0] += 1
+                            x[1] |= _phones_of(c)
+                if not convs or _ts(convs[-1].get("updated_at")) < s or len(convs) < 20:
+                    break
+                last = convs[-1].get("id")
+            print(name, {k: f"{v[0]} hội thoại / {len(v[1])} SĐT" for k, v in sorted(st.items())})
+            print(name, "v1 (tạo trong kỳ):", len(_collect_phones(tok, s, u)) if tok else 0)
     if a.to:
         pk = period(tgt, datetime.strptime(a.to, "%d/%m/%Y").replace(tzinfo=VN_TZ))
         print(pk)
