@@ -164,24 +164,48 @@ def period(start_day, end_day):
     """4 dòng SĐT cho kỳ [start_day, end_day] (ngày VN) — đọc thẳng Pancake, không dùng state."""
     s, u = _day_bounds(start_day)[0], _day_bounds(end_day)[1]
     fb, zl = split_period(FB_TOKEN, s, u), split_period(ZALO_TOKEN, s, u)
-    return _four(fb, zl)
+    return _four(fb, zl, s, u)
 
 
-def _four(fb, zl):
-    return {"fb": fb["new"], "fb_old": fb["old"], "fb_all": fb["all"],
-            "zalo": zl["new"], "zalo_all": zl["all"], "total": fb["all"] + zl["all"]}
+def stat_phones(tok, since, until):
+    """Số 'SĐT' trên màn Thống kê của Pancake (phone_number_count = SĐT khách GỬI trong kỳ). None nếu lỗi."""
+    if not tok:
+        return 0
+    try:
+        js = requests.get(f"{BASE}/{_page_id(tok)}/statistics/pages", params={
+            "page_access_token": tok, "since": since, "until": until}, timeout=90).json()
+        if not js.get("success", True) or not isinstance(js.get("data"), list):
+            return None
+        return sum(int(r.get("phone_number_count") or 0) for r in js["data"])
+    except Exception as e:
+        print("[pancake] thống kê lỗi:", e)
+        return None
+
+
+def _four(fb, zl, since, until):
+    pk = {"fb": fb["new"], "fb_old": fb["old"], "fb_all": fb["all"],
+          "zalo": zl["new"], "zalo_all": zl["all"], "total": fb["all"] + zl["all"]}
+    sf, sz = stat_phones(FB_TOKEN, since, until), stat_phones(ZALO_TOKEN, since, until)
+    if sf is not None and sz is not None:
+        pk.update(stat_fb=sf, stat_zalo=sz)
+    return pk
 
 
 def lines(pk):
-    """4 dòng hiển thị (HTML Telegram) + chú thích định nghĩa. pk = kết quả run()/period()."""
-    return [
+    """4 dòng hiển thị (HTML Telegram) + đối chiếu màn Thống kê Pancake + định nghĩa. pk = kết quả run()/period()."""
+    out = [
         f"• (1) SĐT mới lần đầu (FB): <b>{pk.get('fb', 0)}</b>",
         f"• (2) SĐT khách cũ nhắn lại (FB): <b>{pk.get('fb_old', 0)}</b>",
         f"• (3) SĐT Zalo: <b>{pk.get('zalo_all', 0)}</b> (trong đó mới {pk.get('zalo', 0)})",
-        f"• (4) Tổng SĐT FB + Zalo: <b>{pk.get('total', 0)}</b> ← khớp Pancake",
-        "<i>(1) số lần đầu nhắn page FB · (2) số đã từng nhắn trước kỳ, nay nhắn lại · "
-        "(3) mọi số kênh Zalo · (4) = 1+2+3, mỗi kênh 1 số tính 1 lần</i>",
+        f"• (4) Tổng SĐT FB + Zalo: <b>{pk.get('total', 0)}</b> = hội thoại có SĐT trên Pancake",
     ]
+    if "stat_fb" in pk:
+        out.append(f"• Màn Thống kê Pancake: FB {pk['stat_fb']} + Zalo {pk['stat_zalo']} = "
+                   f"<b>{pk['stat_fb'] + pk['stat_zalo']}</b> (chỉ SĐT khách gửi trong kỳ)")
+    out.append("<i>(1) số lần đầu nhắn page FB · (2) số đã nhắn trước kỳ, nay nhắn lại · "
+               "(3) mọi số kênh Zalo · (4) = 1+2+3, mỗi kênh 1 số tính 1 lần. "
+               "Thống kê thấp hơn (4) vì khách cũ nhắn lại không gửi lại SĐT thì Pancake không đếm.</i>")
+    return out
 
 
 def _extend_baseline(state, key, tok, upto_day):
@@ -285,7 +309,7 @@ def run(target, state, write=True):
     if ZALO_TOKEN:
         _extend_baseline(state, "pk_seen_zalo", ZALO_TOKEN, day_before)
     pk = _four(_count_day(state, "pk_seen_fb", FB_TOKEN, target),
-               _count_day(state, "pk_seen_zalo", ZALO_TOKEN, target))
+               _count_day(state, "pk_seen_zalo", ZALO_TOKEN, target), *_day_bounds(target))
     print(f"[pancake {target.strftime('%d/%m')}] SĐT FB mới={pk['fb']} cũ={pk['fb_old']} | "
           f"Zalo={pk['zalo_all']} (mới {pk['zalo']}) | tổng={pk['total']}")
     if write:  # sheet giữ như cũ: cột SDT = SĐT mới FB, cột 'SĐT Zalo' = SĐT mới Zalo
@@ -331,14 +355,6 @@ if __name__ == "__main__":
                 last = convs[-1].get("id")
             print(name, {k: f"{v[0]} hội thoại / {len(v[1])} SĐT" for k, v in sorted(st.items())})
             print(name, "v1 (tạo trong kỳ):", len(_collect_phones(tok, s, u)) if tok else 0)
-            if tok:  # số Pancake tự thống kê (màn Thống kê) cùng kỳ
-                js = requests.get(f"{BASE}/{_page_id(tok)}/statistics/pages", params={
-                    "page_access_token": tok, "since": s, "until": u}, timeout=90).json()
-                tot = {}
-                for r in js.get("data") or []:
-                    for k in ("phone_number_count", "uniq_phone_number_count", "new_customer_count"):
-                        tot[k] = tot.get(k, 0) + int(r.get(k) or 0)
-                print(name, "thống kê Pancake:", tot)
     if a.to:
         pk = period(tgt, datetime.strptime(a.to, "%d/%m/%Y").replace(tzinfo=VN_TZ))
         print(pk)
