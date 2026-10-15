@@ -331,6 +331,14 @@ if __name__ == "__main__":
                 last = convs[-1].get("id")
             print(name, {k: f"{v[0]} hội thoại / {len(v[1])} SĐT" for k, v in sorted(st.items())})
             print(name, "v1 (tạo trong kỳ):", len(_collect_phones(tok, s, u)) if tok else 0)
+            if tok:  # số Pancake tự thống kê (màn Thống kê) cùng kỳ
+                js = requests.get(f"{BASE}/{_page_id(tok)}/statistics/pages", params={
+                    "page_access_token": tok, "since": s, "until": u}, timeout=90).json()
+                tot = {}
+                for r in js.get("data") or []:
+                    for k in ("phone_number_count", "uniq_phone_number_count", "new_customer_count"):
+                        tot[k] = tot.get(k, 0) + int(r.get(k) or 0)
+                print(name, "thống kê Pancake:", tot)
     if a.to:
         pk = period(tgt, datetime.strptime(a.to, "%d/%m/%Y").replace(tzinfo=VN_TZ))
         print(pk)
