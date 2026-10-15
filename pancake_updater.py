@@ -308,8 +308,13 @@ def run(target, state, write=True):
         _extend_baseline(state, "pk_seen_fb", FB_TOKEN, day_before)
     if ZALO_TOKEN:
         _extend_baseline(state, "pk_seen_zalo", ZALO_TOKEN, day_before)
-    pk = _four(_count_day(state, "pk_seen_fb", FB_TOKEN, target),
-               _count_day(state, "pk_seen_zalo", ZALO_TOKEN, target), *_day_bounds(target))
+    key = f"{target.year}-{target.month:02d}-{target.day:02d}"
+    pk = state.get("pk_daily", {}).get(key)
+    if not (pk and "total" in pk):
+        # chưa có số đủ 4 dòng cho ngày này -> đếm. Đã có thì giữ nguyên: hội thoại hôm qua mà khách nhắn
+        # tiếp hôm nay sẽ "trôi" khỏi ngày hôm qua -> đếm lại ở mốc 07h/08h sẽ tụt số và gửi CẬP NHẬT thừa.
+        pk = _four(_count_day(state, "pk_seen_fb", FB_TOKEN, target),
+                   _count_day(state, "pk_seen_zalo", ZALO_TOKEN, target), *_day_bounds(target))
     print(f"[pancake {target.strftime('%d/%m')}] SĐT FB mới={pk['fb']} cũ={pk['fb_old']} | "
           f"Zalo={pk['zalo_all']} (mới {pk['zalo']}) | tổng={pk['total']}")
     if write:  # sheet giữ như cũ: cột SDT = SĐT mới FB, cột 'SĐT Zalo' = SĐT mới Zalo
@@ -317,7 +322,6 @@ def run(target, state, write=True):
             _write_row(target, pk["fb"], pk["zalo"])
         except Exception as e:
             print("[pancake] lỗi ghi sheet:", e)
-    key = f"{target.year}-{target.month:02d}-{target.day:02d}"
     state.setdefault("pk_daily", {})[key] = pk
     return pk
 
