@@ -107,7 +107,11 @@
     "08/10|Làm video tiktok, lên lịch theo ngày": "08/10",
     "12/10|Làm video tiktok, lên lịch theo ngày": "12/10",
     "12/10|Tối ưu lại kịch bản đăng bài": "12/10",
-    "13/10|Làm video tiktok, lên lịch theo ngày": "13/10"
+    "13/10|Làm video tiktok, lên lịch theo ngày": "13/10",
+    "15/10|Thiết kế ảnh bìa cho page TGS": "15/10",
+    "15/10|Thiết kế banner cho TGS": "15/10",
+    "15/10|Đổi Internal link cho TGS": "15/10",
+    "15/10|Lên lịch đăng bài chi tiết cho TGS vào tháng 11": "15/10"
   },
   "ongoing_seen": {
     "28/09|Thêm các entity cho website": 1,
@@ -698,6 +702,7 @@
     "2804de0331406ea3",
     "293a7a383757abe7",
     "298afae8edc69e2a",
+    "2aa4f6ad0befb9d9",
     "2ad01de6c60ccd20",
     "2c9594f547cc2212",
     "2cf60e5462555980",
@@ -849,6 +854,7 @@
     "7daec1c993380946",
     "7dbdd41140d9270e",
     "7dc75b8d0fe955e9",
+    "7e17a22853a9ca11",
     "7e2c0343e903bff1",
     "7e953846e9bf210d",
     "80205b005602c694",
@@ -870,6 +876,7 @@
     "8887286b018f05b7",
     "896483e136068870",
     "896d029c84a1a79d",
+    "896d31da0b81b8c8",
     "89f48764b6b03319",
     "89facd2737f91fe0",
     "8a1e356734cd7911",
@@ -996,7 +1003,9 @@
     "c7fde800689f7fa3",
     "c8ee20740c71ec00",
     "c953554ccdf0fe41",
+    "cbced6042cb452d6",
     "cdaece6b47eb92a7",
+    "cddac0fe45aa6e49",
     "cdf3b99fcdeb2096",
     "ce378bf29ee0b058",
     "cea5525c92f3ebfe",
@@ -1009,6 +1018,7 @@
     "d4645c95e7b680f9",
     "d4f2caf34707395a",
     "d4f91198ae9f7f15",
+    "d506296282823c57",
     "d7c8bcac6eec5fc3",
     "d8430a8021be9a0d",
     "d90b3559c082a084",
@@ -1025,6 +1035,7 @@
     "df67af34ff010959",
     "dfeb7eed2da3fe09",
     "e0766bd455bdb082",
+    "e0b7f9580121c1bd",
     "e0fb227d8b417390",
     "e12bba9301d04d8e",
     "e21c3879623024e9",
@@ -1090,7 +1101,7 @@
     "ff94cdb12a3a6002",
     "ffaa9ccec8dd9ef1"
   ],
-  "pk_seen_fb_day": "2026-10-13",
+  "pk_seen_fb_day": "2026-10-14",
   "pk_seen_zalo": [
     "00a61df8631cb406",
     "02f3565875f65724",
@@ -1300,5 +1311,8 @@
   },
   "daily-2026-14/10": {
     "hash": "2de8c3a6a88607b23f9b8b9a3eddf5b2"
+  },
+  "daily-2026-15/10": {
+    "hash": "334007d74405bb3ed792e9b5fa7293df"
   }
 }
