@@ -1,0 +1,30 @@
+name: "Doi chieu SDT Pancake (chi in so, khong gui, khong ghi)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "Từ ngày dd/mm/yyyy"
+        required: true
+      to:
+        description: "Đến ngày dd/mm/yyyy"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - env:
+          PANCAKE_FB_TOKEN: ${{ secrets.PANCAKE_FB_TOKEN }}
+          PANCAKE_ZALO_TOKEN: ${{ secrets.PANCAKE_ZALO_TOKEN }}
+          FROM: ${{ inputs.from }}
+          TO: ${{ inputs.to }}
+        run: python pancake_updater.py --date "$FROM" --to "$TO" --no-write

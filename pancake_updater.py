@@ -11,6 +11,15 @@ Kéo SỐ ĐIỆN THOẠI MỚI trong ngày từ Pancake (pages.fm) cho 2 nguồ
 API: https://pages.fm/api/public_api/v1/pages/{page_id}/conversations
      ?page_access_token=...&since=<unix>&until=<unix>&page_number=<n>
 Mỗi hội thoại có has_phone + recent_phone_numbers[].phone_number.
+LƯU Ý: since/until của v1 lọc theo NGÀY TẠO hội thoại -> khách cũ nhắn lại (hội thoại tạo
+từ trước) KHÔNG hiện. Pancake (giao diện) đếm theo hội thoại CÓ HOẠT ĐỘNG trong kỳ -> lấy thêm
+danh sách v2 (mới cập nhật trước, lùi bằng last_conversation_id) để đếm đủ như Pancake.
+
+4 dòng SĐT trong báo cáo (15/10/2026, mỗi kênh đếm 1 SĐT 1 lần trong kỳ):
+  (1) SĐT mới lần đầu  = SĐT page FB trong kỳ, CHƯA từng thấy trước kỳ (từ BACKFILL_SINCE)
+  (2) SĐT khách cũ     = SĐT page FB trong kỳ, ĐÃ thấy trước kỳ (khách cũ nhắn lại)
+  (3) SĐT Zalo         = mọi SĐT kênh Zalo trong kỳ (mới + cũ), tách riêng
+  (4) Tổng FB + Zalo   = (1) + (2) + (3)  -> khớp số SĐT Pancake cùng kỳ (2 kênh cộng lại)
 """
 import os
 import json
@@ -61,40 +70,118 @@ def _day_bounds(day):
 _CHUNK = 25 * 86400  # API pages.fm trả rỗng nếu khoảng since/until quá rộng (>~1 tháng) -> chia nhỏ
 
 
+def _api(tok, ver, params):
+    """GET danh sách hội thoại (retry chống timeout lẻ). Trả JSON hoặc None."""
+    for attempt in range(3):
+        try:
+            r = requests.get(f"{BASE.replace('/v1/', f'/v{ver}/')}/{_page_id(tok)}/conversations",
+                             params={"page_access_token": tok, **params}, timeout=90)
+            return r.json()
+        except Exception as e:
+            print(f"[pancake] v{ver} {params.get('page_number') or ''} lỗi (lần {attempt + 1}): {e}")
+    return None
+
+
+def _phones_of(c):
+    out = set()
+    if c.get("has_phone") or c.get("recent_phone_numbers"):
+        for ph in (c.get("recent_phone_numbers") or []):
+            num = _norm_phone(ph.get("phone_number") or ph.get("captured"))
+            if len(num) >= 9:
+                out.add(num)
+    return out
+
+
 def _collect_phones(tok, since, until):
-    """Tập SĐT (đã chuẩn hoá) xuất hiện trong [since, until]. Chia cửa sổ ≤25 ngày."""
-    pid = _page_id(tok)
+    """Tập SĐT (đã chuẩn hoá) của hội thoại TẠO trong [since, until]. Chia cửa sổ ≤25 ngày."""
     phones = set()
     seg_start = since
     while seg_start <= until:
         seg_end = min(seg_start + _CHUNK, until)
         pn = 1
         while pn <= 400:  # chặn vô hạn
-            js = None
-            for attempt in range(3):  # retry chống timeout lẻ
-                try:
-                    r = requests.get(f"{BASE}/{pid}/conversations", params={
-                        "page_access_token": tok, "since": seg_start, "until": seg_end,
-                        "page_number": pn,
-                    }, timeout=90)
-                    js = r.json()
-                    break
-                except Exception as e:
-                    print(f"[pancake] trang {pn} lỗi (lần {attempt + 1}): {e}")
+            js = _api(tok, 1, {"since": seg_start, "until": seg_end, "page_number": pn})
             if js is None:
                 break
             convs = js.get("conversations", [])
             if not convs:
                 break
             for c in convs:
-                if c.get("has_phone") or c.get("recent_phone_numbers"):
-                    for ph in (c.get("recent_phone_numbers") or []):
-                        num = _norm_phone(ph.get("phone_number") or ph.get("captured"))
-                        if len(num) >= 9:
-                            phones.add(num)
+                phones |= _phones_of(c)
             pn += 1
         seg_start = seg_end + 1
     return phones
+
+
+def _ts(s):
+    """'2026-10-09T03:05:11.691' (UTC, có/không Z) -> unix."""
+    s = str(s or "").replace("Z", "")[:19]
+    try:
+        return int(datetime.strptime(s, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc).timestamp())
+    except ValueError:
+        return 0
+
+
+def _collect_active_phones(tok, since, until):
+    """Tập SĐT của hội thoại CÓ HOẠT ĐỘNG (cập nhật) trong [since, until] — gồm khách cũ nhắn lại.
+    v2 trả hội thoại mới cập nhật trước -> lùi trang tới khi cũ hơn `since`."""
+    phones, last = set(), None
+    for _ in range(300):  # chặn vô hạn (60 hội thoại/trang)
+        js = _api(tok, 2, {"last_conversation_id": last} if last else {})
+        convs = (js or {}).get("conversations") or []
+        if not convs:
+            if js is None or js.get("success") is False:
+                raise RuntimeError(f"Pancake v2: {(js or {}).get('message', 'không đọc được hội thoại')}")
+            break
+        for c in convs:
+            if since <= _ts(c.get("updated_at")) <= until:
+                phones |= _phones_of(c)
+        last = convs[-1].get("id")
+        if _ts(convs[-1].get("updated_at")) < since or len(convs) < 20:
+            break
+    return phones
+
+
+def phones_in(tok, since, until):
+    """Mọi SĐT 1 kênh trong kỳ = hội thoại tạo trong kỳ ∪ hội thoại có hoạt động trong kỳ."""
+    return _collect_phones(tok, since, until) | _collect_active_phones(tok, since, until)
+
+
+def split_period(tok, since, until, seen_hashes=None):
+    """{'new','old','all'} của 1 kênh trong [since, until]. seen_hashes = HASH SĐT đã thấy TRƯỚC kỳ;
+    None -> tự tải từ BACKFILL_SINCE tới trước kỳ (dùng cho báo cáo tuần/tháng/đối chiếu)."""
+    if not tok:
+        return {"new": 0, "old": 0, "all": 0}
+    if seen_hashes is None:
+        start = int(datetime.strptime(BACKFILL_SINCE, "%Y-%m-%d").replace(tzinfo=VN_TZ).timestamp())
+        seen_hashes = {_hash(n) for n in _collect_phones(tok, start, since - 1)} if since > start else set()
+    ph = phones_in(tok, since, until)
+    old = sum(1 for n in ph if _hash(n) in seen_hashes)
+    return {"new": len(ph) - old, "old": old, "all": len(ph)}
+
+
+def period(start_day, end_day):
+    """4 dòng SĐT cho kỳ [start_day, end_day] (ngày VN) — đọc thẳng Pancake, không dùng state."""
+    s, u = _day_bounds(start_day)[0], _day_bounds(end_day)[1]
+    fb, zl = split_period(FB_TOKEN, s, u), split_period(ZALO_TOKEN, s, u)
+    return _four(fb, zl)
+
+
+def _four(fb, zl):
+    return {"fb": fb["new"], "fb_old": fb["old"], "fb_all": fb["all"],
+            "zalo": zl["new"], "zalo_all": zl["all"], "total": fb["all"] + zl["all"]}
+
+
+def lines(pk):
+    """4 dòng hiển thị (HTML Telegram) + chú thích định nghĩa. pk = kết quả run()/period()."""
+    return [
+        f"• (1) SĐT mới lần đầu (FB): <b>{pk.get('fb', 0)}</b>",
+        f"• (2) SĐT khách cũ nhắn lại (FB): <b>{pk.get('fb_old', 0)}</b>",
+        f"• (3) SĐT Zalo: <b>{pk.get('zalo_all', 0)}</b> (trong đó mới {pk.get('zalo', 0)})",
+        f"• (4) Tổng SĐT FB + Zalo: <b>{pk.get('total', 0)}</b> ← khớp Pancake",
+        "<i>(1) số lần đầu nhắn page FB · (2) số đã từng nhắn trước kỳ, nay nhắn lại · "
+        "(3) mọi số kênh Zalo · (4) = 1+2+3, mỗi kênh 1 số tính 1 lần</i>",
+    ]
 
 
 def _extend_baseline(state, key, tok, upto_day):
@@ -114,20 +201,20 @@ def _extend_baseline(state, key, tok, upto_day):
     until = _day_bounds(upto_day)[1]
     seen = set(state.get(key, []))
     before = len(seen)
-    for num in _collect_phones(tok, since, until):
+    # gồm cả hội thoại cũ có hoạt động -> SĐT đã đếm "mới" hôm qua không bị đếm mới lần nữa
+    # (chỉ lùi tối đa 7 ngày cho phần hoạt động — baseline thường chỉ thiếu 1 ngày)
+    for num in _collect_phones(tok, since, until) | _collect_active_phones(
+            tok, max(since, until - 7 * 86400), until):
         seen.add(_hash(num))
     state[key] = sorted(seen)
     state[day_key] = upto_iso
     print(f"[pancake] baseline {key}: +{len(seen) - before} (tổng {len(seen)}) tới {upto_iso}")
 
 
-def _count_new(state, key, tok, day):
-    """Số SĐT mới trong NGÀY day = SĐT không có trong baseline. KHÔNG sửa baseline."""
-    if not tok:
-        return 0
-    seen = set(state.get(key, []))
+def _count_day(state, key, tok, day):
+    """{'new','old','all'} trong NGÀY day so với baseline (SĐT đã thấy trước ngày). KHÔNG sửa baseline."""
     s, u = _day_bounds(day)
-    return sum(1 for num in _collect_phones(tok, s, u) if _hash(num) not in seen)
+    return split_period(tok, s, u, set(state.get(key, [])))
 
 
 def _gclient():
@@ -197,17 +284,18 @@ def run(target, state, write=True):
         _extend_baseline(state, "pk_seen_fb", FB_TOKEN, day_before)
     if ZALO_TOKEN:
         _extend_baseline(state, "pk_seen_zalo", ZALO_TOKEN, day_before)
-    fb_new = _count_new(state, "pk_seen_fb", FB_TOKEN, target)
-    zalo_new = _count_new(state, "pk_seen_zalo", ZALO_TOKEN, target)
-    print(f"[pancake {target.strftime('%d/%m')}] SĐT mới: FB={fb_new} | Zalo={zalo_new}")
-    if write:
+    pk = _four(_count_day(state, "pk_seen_fb", FB_TOKEN, target),
+               _count_day(state, "pk_seen_zalo", ZALO_TOKEN, target))
+    print(f"[pancake {target.strftime('%d/%m')}] SĐT FB mới={pk['fb']} cũ={pk['fb_old']} | "
+          f"Zalo={pk['zalo_all']} (mới {pk['zalo']}) | tổng={pk['total']}")
+    if write:  # sheet giữ như cũ: cột SDT = SĐT mới FB, cột 'SĐT Zalo' = SĐT mới Zalo
         try:
-            _write_row(target, fb_new, zalo_new)
+            _write_row(target, pk["fb"], pk["zalo"])
         except Exception as e:
             print("[pancake] lỗi ghi sheet:", e)
     key = f"{target.year}-{target.month:02d}-{target.day:02d}"
-    state.setdefault("pk_daily", {})[key] = {"fb": fb_new, "zalo": zalo_new}
-    return {"fb": fb_new, "zalo": zalo_new}
+    state.setdefault("pk_daily", {})[key] = pk
+    return pk
 
 
 if __name__ == "__main__":
@@ -215,6 +303,7 @@ if __name__ == "__main__":
     import ssl
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", help="dd/mm/yyyy")
+    ap.add_argument("--to", help="dd/mm/yyyy — có thì in 4 dòng SĐT cho kỳ --date..--to (đối chiếu Pancake, không ghi gì)")
     ap.add_argument("--no-write", action="store_true")
     ap.add_argument("--local-ssl", action="store_true", help="bỏ verify SSL khi test máy")
     a = ap.parse_args()
@@ -222,5 +311,10 @@ if __name__ == "__main__":
         ssl._create_default_https_context = ssl._create_unverified_context
     tgt = (datetime.strptime(a.date, "%d/%m/%Y").replace(tzinfo=VN_TZ)
            if a.date else datetime.now(VN_TZ) - timedelta(days=1))
-    st = {}
-    print(run(tgt, st, write=not a.no_write))
+    if a.to:
+        pk = period(tgt, datetime.strptime(a.to, "%d/%m/%Y").replace(tzinfo=VN_TZ))
+        print(pk)
+        print("\n".join(lines(pk)))
+    else:
+        st = {}
+        print(run(tgt, st, write=not a.no_write))

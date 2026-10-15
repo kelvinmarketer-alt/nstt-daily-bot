@@ -646,10 +646,8 @@ def process_daily(anchor, remind_today=True):
         )
     blocks.append("📊 <b>CHI PHÍ ADS</b>\n" + _ads_body(anchor))
     if pk is not None:
-        blocks.append(
-            "🌱 <b>NGUỒN SỐ TỰ NHIÊN (Zalo)</b>\n"
-            f"• SĐT mới trong ngày: <b>{pk.get('zalo', 0)}</b>"
-        )
+        import pancake_updater
+        blocks.append("📞 <b>SĐT PANCAKE (FB + Zalo)</b>\n" + "\n".join(pancake_updater.lines(pk)))
     body = "\n\n".join(blocks)
 
     key = f"daily-{anchor.year}-{ddmm}"
@@ -733,10 +731,26 @@ def section_period_ads(grid, ac, dayset):
     return "\n".join(sp) + "\n\n" + "\n".join(td)
 
 
-def _send_period(state_key, header, dayset):
+def section_period_pancake(start, end):
+    """4 dòng SĐT cả kỳ đọc thẳng Pancake (mỗi SĐT tính 1 lần/kỳ — cộng từng ngày sẽ đếm trùng)."""
+    if not (os.environ.get("PANCAKE_FB_TOKEN") or os.environ.get("PANCAKE_ZALO_TOKEN")):
+        return ""
+    try:
+        import pancake_updater
+        pk = pancake_updater.period(start, end)
+        return "📞 <b>SĐT PANCAKE (FB + Zalo) cả kỳ</b>\n" + "\n".join(pancake_updater.lines(pk))
+    except Exception as e:
+        print("[pancake] kỳ bỏ qua (lỗi):", e, file=sys.stderr)
+        return ""
+
+
+def _send_period(state_key, header, dayset, start=None, end=None):
     ads = fetch_grid(SHEET_ADS, ADS_SHEET_ID)
     ac = _ads_cols(ads)
     body = header + "\n\n" + section_period_ads(ads, ac, dayset)
+    pk = section_period_pancake(start, end) if start else ""
+    if pk:
+        body += "\n\n" + pk
     state = load_state()
     entry = state.get(state_key, {})
     h = hashlib.md5(body.encode("utf-8")).hexdigest()
@@ -760,7 +774,7 @@ def process_weekly(now=None):
         f"📅 <b>BÁO CÁO TUẦN — NÔNG SẢN TUẤN TÚ</b>\n"
         f"🗓 Tuần {start.strftime('%d/%m')} – {end.strftime('%d/%m/%Y')}\n{'─' * 22}"
     )
-    _send_period(f"weekly-{iso[0]}-W{iso[1]:02d}", header, _dayset(start, end))
+    _send_period(f"weekly-{iso[0]}-W{iso[1]:02d}", header, _dayset(start, end), start, end)
 
 
 def process_monthly(now=None):
@@ -772,7 +786,7 @@ def process_monthly(now=None):
         f"📆 <b>BÁO CÁO THÁNG {end.month}/{end.year} — NÔNG SẢN TUẤN TÚ</b>\n"
         f"🗓 {start.strftime('%d/%m')} – {end.strftime('%d/%m/%Y')}\n{'─' * 22}"
     )
-    _send_period(f"monthly-{end.year}-{end.month:02d}", header, _dayset(start, end))
+    _send_period(f"monthly-{end.year}-{end.month:02d}", header, _dayset(start, end), start, end)
 
 
 def main():

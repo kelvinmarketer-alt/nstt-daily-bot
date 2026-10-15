@@ -24,6 +24,8 @@ jobs:
       - env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
+          PANCAKE_FB_TOKEN: ${{ secrets.PANCAKE_FB_TOKEN }}
+          PANCAKE_ZALO_TOKEN: ${{ secrets.PANCAKE_ZALO_TOKEN }}
         run: python report_bot.py weekly
       - name: Lưu state
         run: |
