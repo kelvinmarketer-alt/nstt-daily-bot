@@ -113,7 +113,8 @@
     "15/10|Đổi Internal link cho TGS": "15/10",
     "15/10|Lên lịch đăng bài chi tiết cho TGS vào tháng 11": "15/10",
     "27/10|Thiết kế banner vinh danh": "27/10",
-    "27/10|Đổi logo cho file pdf NSTT": "27/10"
+    "27/10|Đổi logo cho file pdf NSTT": "27/10",
+    "28/10|Thiết kế và lên bài chào mừng cho Bia ƠI": "28/10"
   },
   "ongoing_seen": {
     "28/09|Thêm các entity cho website": 1,
@@ -832,6 +833,7 @@
     "6d6ff6d3ab966cc6",
     "6dbafbeacbde3fde",
     "6dc59e98609e899d",
+    "6dd2e23f753de9c0",
     "6de9cc5f31ba19c8",
     "6e09d6791b132837",
     "6faf68f23744863a",
@@ -998,6 +1000,7 @@
     "b185a9e72d16e872",
     "b27ab2d88e506339",
     "b2a70d8f3c120e27",
+    "b3fa4b2986209a8b",
     "b401a87af0392fbc",
     "b560186cf21cafe4",
     "b5e7e309e871275b",
@@ -1134,7 +1137,7 @@
     "ff94cdb12a3a6002",
     "ffaa9ccec8dd9ef1"
   ],
-  "pk_seen_fb_day": "2026-10-26",
+  "pk_seen_fb_day": "2026-10-27",
   "pk_seen_zalo": [
     "00a61df8631cb406",
     "02f3565875f65724",
@@ -1389,5 +1392,8 @@
   },
   "daily-2026-27/10": {
     "hash": "f2fb06a0e752358db1279ce027781a88"
+  },
+  "daily-2026-28/10": {
+    "hash": "9cdd604b1ee55d149366bd7c59a56cbe"
   }
 }
