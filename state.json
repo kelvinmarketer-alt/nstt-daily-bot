@@ -111,7 +111,9 @@
     "15/10|Thiết kế ảnh bìa cho page TGS": "15/10",
     "15/10|Thiết kế banner cho TGS": "15/10",
     "15/10|Đổi Internal link cho TGS": "15/10",
-    "15/10|Lên lịch đăng bài chi tiết cho TGS vào tháng 11": "15/10"
+    "15/10|Lên lịch đăng bài chi tiết cho TGS vào tháng 11": "15/10",
+    "27/10|Thiết kế banner vinh danh": "27/10",
+    "27/10|Đổi logo cho file pdf NSTT": "27/10"
   },
   "ongoing_seen": {
     "28/09|Thêm các entity cho website": 1,
@@ -1386,6 +1388,6 @@
     "hash": "b3fe38b8032abaea49e1a66118f2a599"
   },
   "daily-2026-27/10": {
-    "hash": "d846cc4a583982548d6fa481abdced2a"
+    "hash": "f2fb06a0e752358db1279ce027781a88"
   }
 }
