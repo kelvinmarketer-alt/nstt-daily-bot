@@ -114,7 +114,9 @@
     "15/10|Lên lịch đăng bài chi tiết cho TGS vào tháng 11": "15/10",
     "27/10|Thiết kế banner vinh danh": "27/10",
     "27/10|Đổi logo cho file pdf NSTT": "27/10",
-    "28/10|Thiết kế và lên bài chào mừng cho Bia ƠI": "28/10"
+    "28/10|Thiết kế và lên bài chào mừng cho Bia ƠI": "28/10",
+    "28/10|Thiết kế lại sologan banner 6S": "28/10",
+    "28/10|Thiết kế lại sologan vinh danh": "28/10"
   },
   "ongoing_seen": {
     "28/09|Thêm các entity cho website": 1,
@@ -1394,6 +1396,6 @@
     "hash": "f2fb06a0e752358db1279ce027781a88"
   },
   "daily-2026-28/10": {
-    "hash": "9cdd604b1ee55d149366bd7c59a56cbe"
+    "hash": "49ce19eddca4ee99410d628fe00129a7"
   }
 }
