@@ -1028,6 +1028,7 @@
     "bd061455369acf4f",
     "bd65b3c7f21dc61f",
     "bdb68277bd19c3d2",
+    "bdf4deb899d3d344",
     "be76ac1ddfab931f",
     "c12a700505b4dcec",
     "c1bbca7aa7f297f0",
@@ -1150,7 +1151,7 @@
     "ff94cdb12a3a6002",
     "ffaa9ccec8dd9ef1"
   ],
-  "pk_seen_fb_day": "2026-11-02",
+  "pk_seen_fb_day": "2026-11-03",
   "pk_seen_zalo": [
     "00a61df8631cb406",
     "02f3565875f65724",
@@ -1432,5 +1433,8 @@
   },
   "daily-2026-03/11": {
     "hash": "3c6a570c78166e38991baedb12b98695"
+  },
+  "daily-2026-04/11": {
+    "hash": "b4d821000fcaeac5a2483f73cb113f8d"
   }
 }
