@@ -1053,6 +1053,7 @@
     "be76ac1ddfab931f",
     "c0e126a94e92f521",
     "c12a700505b4dcec",
+    "c170901eb6faa370",
     "c1bbca7aa7f297f0",
     "c21b4320a2f49c27",
     "c29b6a98cd273be4",
@@ -1073,6 +1074,8 @@
     "c90fdfac2f147515",
     "c953554ccdf0fe41",
     "cbced6042cb452d6",
+    "cc764d75c7cc5455",
+    "cc80292608432784",
     "cda3a9c2a52714ed",
     "cdaece6b47eb92a7",
     "cddac0fe45aa6e49",
@@ -1116,6 +1119,7 @@
     "e24dfce94e26abd6",
     "e26ec92cb7e42a9a",
     "e28643fbef7873d9",
+    "e295c0a14937d3a2",
     "e2a1d23df12743af",
     "e2b901b0f9a4b9bf",
     "e330e16510f3c900",
@@ -1178,7 +1182,7 @@
     "ff94cdb12a3a6002",
     "ffaa9ccec8dd9ef1"
   ],
-  "pk_seen_fb_day": "2026-11-08",
+  "pk_seen_fb_day": "2026-11-09",
   "pk_seen_zalo": [
     "00a61df8631cb406",
     "02f3565875f65724",
@@ -1481,5 +1485,8 @@
   },
   "daily-2026-09/11": {
     "hash": "fef576e5960fc2b57df26cf7f9a2df1b"
+  },
+  "daily-2026-10/11": {
+    "hash": "e23302f83675f70d36110778ae0a079a"
   }
 }
