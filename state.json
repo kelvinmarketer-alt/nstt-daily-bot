@@ -826,6 +826,7 @@
     "593586a44c75e42f",
     "599dc1655a7183a7",
     "59d3940e499ef8d8",
+    "5a6afc9c56209c8f",
     "5af0f7adb25eb164",
     "5b7288fee5f99b1f",
     "5c9e4ba10b1a30c6",
@@ -1023,6 +1024,8 @@
     "ab5061851c3eada3",
     "ab7102d71f60bb00",
     "ab71a1aa2e2bfc76",
+    "ab937a6af99399db",
+    "ab9b73c9c483bad2",
     "aba073b5a75fac3a",
     "ac49c4bb50486e42",
     "ac5e455e523a30b3",
@@ -1113,7 +1116,9 @@
     "d90b3559c082a084",
     "d97e14f86f720a26",
     "da28a05bf14e639d",
+    "da2eae60fb167f15",
     "da7ee319876c1024",
+    "da838b11b2158186",
     "db0dd76bc076e083",
     "db2e34d5c3f45337",
     "db32ab9eb0c8c413",
@@ -1200,7 +1205,7 @@
     "ff94cdb12a3a6002",
     "ffaa9ccec8dd9ef1"
   ],
-  "pk_seen_fb_day": "2026-11-12",
+  "pk_seen_fb_day": "2026-11-13",
   "pk_seen_zalo": [
     "00a61df8631cb406",
     "02f3565875f65724",
@@ -1515,5 +1520,8 @@
   },
   "daily-2026-13/11": {
     "hash": "5242c3e00044507ed2f3cff2b4db10ac"
+  },
+  "daily-2026-14/11": {
+    "hash": "1ccda4f851c955e33c423cef857445d4"
   }
 }
